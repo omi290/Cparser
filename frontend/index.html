@@ -1,16 +1,244 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>C Parser Visualizer</title>
+  <title>C Parser Visualizer — Lexical Analysis</title>
+  <meta name="description"
+    content="Interactive C language lexical analysis tool. Tokenize C source code and visualize keywords, identifiers, operators, and more." />
+  <link rel="stylesheet" href="style.css" />
+  <!-- Fonts preloaded via CSS @import -->
 </head>
 
 <body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.jsx"></script>
+
+  <!-- ═══ NAVBAR ═══════════════════════════════════════════════════ -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <div class="nav-logo">C</div>
+      <div>
+        <div class="nav-title">C Parser Visualizer</div>
+        <div class="nav-subtitle">Educational Compiler Tool</div>
+      </div>
+    </div>
+    <div class="nav-badges">
+      <span class="badge badge-phase">Phase 1 — Lexical</span>
+      <span class="badge badge-live">API Live</span>
+    </div>
+  </nav>
+
+  <!-- ═══ MAIN ══════════════════════════════════════════════════════ -->
+  <main class="main">
+
+    <!-- Hero -->
+    <div class="hero">
+      <h2>Tokenize &amp; Visualize C Code</h2>
+      <p>Enter C source code below, then click <strong>Visualize Tokens</strong> to see the lexical analysis in real
+        time.</p>
+    </div>
+
+    <!-- Two-column grid -->
+    <div class="grid">
+
+      <!-- ─── LEFT: Code Editor ─────────────────────────────────── -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="card-title-icon">✏️</div>
+            Code Editor
+          </div>
+          <span class="card-label">C Language</span>
+        </div>
+
+        <!-- Editor chrome -->
+        <div class="editor-wrap">
+          <div class="editor-toolbar">
+            <span class="editor-dot red"></span>
+            <span class="editor-dot yellow"></span>
+            <span class="editor-dot green"></span>
+            <span class="editor-filename">main.c</span>
+          </div>
+          <textarea id="code-input" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"
+            placeholder="// Enter your C code here…
+int main() {
+    int a = 5;
+    float b = 3.14;
+    return 0;
+}"></textarea>
+        </div>
+
+        <!-- Editor footer meta -->
+        <div class="editor-footer">
+          <span>Supports: keywords, identifiers, numbers, operators, separators</span>
+          <span><span id="char-count">0 chars</span> · <span id="line-count">0 lines</span></span>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="btn-row">
+          <button id="visualize-btn" class="btn btn-primary">
+            <div class="spinner"></div>
+            <svg class="btn-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span class="btn-text">Visualize Tokens</span>
+          </button>
+          <button id="sample-btn" class="btn btn-secondary" title="Load sample C code">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Sample
+          </button>
+          <button id="clear-btn" class="btn btn-secondary" title="Clear editor">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Clear
+          </button>
+        </div>
+
+        <!-- Keyboard hint -->
+        <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.5rem;text-align:right;">
+          Tip: <kbd
+            style="background:var(--bg-tertiary);border:1px solid var(--border);border-radius:4px;padding:0.1rem 0.35rem;font-family:'JetBrains Mono',monospace;font-size:0.68rem;">Ctrl+Enter</kbd>
+          to visualize
+        </p>
+
+        <!-- Error / Success banners -->
+        <div id="error-banner" class="banner banner-error">
+          <span class="banner-icon">⚠️</span>
+          <span id="error-msg"></span>
+        </div>
+        <div id="success-banner" class="banner banner-success">
+          <span class="banner-icon">✅</span>
+          <span id="success-msg"></span>
+        </div>
+      </div>
+
+      <!-- ─── RIGHT: Visualization Panel ───────────────────────── -->
+      <div class="card viz-card">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="card-title-icon">📊</div>
+            Visualization
+          </div>
+          <!-- Copy button -->
+          <button id="copy-btn" class="copy-btn" title="Copy tokens as text">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+            </svg>
+            <span class="copy-text">Copy</span>
+          </button>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="tabs" role="tablist">
+          <button class="tab-btn active" data-tab="lexical" role="tab" aria-selected="true">
+            🔤 Lexical Analysis
+          </button>
+          <button class="tab-btn" data-tab="semantic" role="tab" aria-selected="false" disabled>
+            🔍 Semantic
+            <span class="tab-soon">Soon</span>
+          </button>
+          <button class="tab-btn" data-tab="syntax" role="tab" aria-selected="false" disabled>
+            🌳 Syntax
+            <span class="tab-soon">Soon</span>
+          </button>
+        </div>
+
+        <!-- ── Panel: Lexical ── -->
+        <div id="panel-lexical" class="tab-panel active">
+
+          <!-- Stats chips -->
+          <div id="stats-row" class="stats-row" style="display:none;"></div>
+
+          <!-- Token table -->
+          <div id="table-wrap" class="table-wrap" style="display:none;">
+            <table class="token-table">
+              <thead>
+                <tr>
+                  <th class="col-num">#</th>
+                  <th>Token Type</th>
+                  <th>Value</th>
+                  <th class="col-line">Line</th>
+                </tr>
+              </thead>
+              <tbody id="token-tbody"></tbody>
+            </table>
+          </div>
+
+          <!-- Empty state (shown when no tokens yet) -->
+          <div id="empty-state" class="empty-state">
+            <div class="empty-icon">🔍</div>
+            <p>No tokens to display yet</p>
+            <small>Write some C code and click "Visualize Tokens"</small>
+          </div>
+
+          <!-- Colored token stream -->
+          <div id="stream-section" style="display:none;">
+            <div class="card-header" style="margin-top:1.25rem;margin-bottom:0.5rem;">
+              <div class="card-title" style="font-size:0.875rem;">
+                <div class="card-title-icon" style="font-size:0.75rem;">🎨</div>
+                Colored Token Stream
+              </div>
+            </div>
+            <div id="stream-box" class="stream-box"></div>
+
+            <!-- Legend -->
+            <div class="legend">
+              <div class="legend-item"><span class="legend-dot" style="background:#60a5fa"></span>Keywords</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#e2e8f0"></span>Identifiers</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#34d399"></span>Numbers</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#f87171"></span>Operators</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#a78bfa"></span>Separators</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#fb923c"></span>Strings</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#fbbf24"></span>Unknown</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Panel: Semantic ── -->
+        <div id="panel-semantic" class="tab-panel">
+          <div class="coming-soon">
+            <div class="cs-icon">🔍</div>
+            <h3>Semantic Analysis</h3>
+            <p>Symbol table generation, variable tracking, scope management, and type checking will be available in
+              Phase 2.</p>
+            <div class="coming-soon-badge">🚧 Coming Soon</div>
+            <small style="color:var(--text-muted);font-size:0.75rem;">This feature is under development</small>
+          </div>
+        </div>
+
+        <!-- ── Panel: Syntax ── -->
+        <div id="panel-syntax" class="tab-panel">
+          <div class="coming-soon">
+            <div class="cs-icon">🌳</div>
+            <h3>Syntax Analysis</h3>
+            <p>Parse tree visualization, AST generation, and syntax error reporting will be available in Phase 3.</p>
+            <div class="coming-soon-badge">🚧 Coming Soon</div>
+            <small style="color:var(--text-muted);font-size:0.75rem;">This feature is under development</small>
+          </div>
+        </div>
+
+      </div><!-- /right card -->
+    </div><!-- /grid -->
+  </main>
+
+  <script src="app.js"></script>
+
+  <!-- Hide empty state when tokens are shown -->
+  <script>
+    const _emptyState = document.getElementById('empty-state');
+    const _tableWrap = document.getElementById('table-wrap');
+    const _observer = new MutationObserver(() => {
+      _emptyState.style.display = _tableWrap.style.display === 'none' ? 'flex' : 'none';
+    });
+    _observer.observe(_tableWrap, { attributes: true, attributeFilter: ['style'] });
+  </script>
 </body>
 
 </html>

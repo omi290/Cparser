@@ -16,7 +16,9 @@ app = Flask(__name__)
 
 # Configure CORS with environment variable
 cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')
-CORS(app, origins=cors_origins)
+# Strip whitespace and handle 'null' origin (from file:// access)
+cors_origins = [o.strip() for o in cors_origins]
+CORS(app, origins=cors_origins, supports_credentials=False)
 
 # Initialize tokenizer
 tokenizer = Tokenizer()

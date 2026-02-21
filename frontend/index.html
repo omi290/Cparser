@@ -1,14 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>C Parser Visualizer — Lexical Analysis</title>
+  <title>C Parser Visualizer — Phase 2: Syntax Analysis</title>
   <meta name="description"
-    content="Interactive C language lexical analysis tool. Tokenize C source code and visualize keywords, identifiers, operators, and more." />
+    content="Interactive C language parser — lexical tokenizer and syntax tree visualizer with pipeline visualization." />
   <link rel="stylesheet" href="style.css" />
-  <!-- Fonts preloaded via CSS @import -->
 </head>
 
 <body>
@@ -19,12 +18,19 @@
       <div class="nav-logo">C</div>
       <div>
         <div class="nav-title">C Parser Visualizer</div>
-        <div class="nav-subtitle">Educational Compiler Tool</div>
+        <div class="nav-subtitle">Educational Compiler Tool — Phase 2</div>
       </div>
     </div>
-    <div class="nav-badges">
-      <span class="badge badge-phase">Phase 1 — Lexical</span>
-      <span class="badge badge-live">API Live</span>
+
+    <div class="nav-right">
+      <div class="nav-badges">
+        <span class="badge badge-live">API Live</span>
+      </div>
+      <button class="theme-toggle" id="theme-toggle" title="Toggle dark / light mode" aria-label="Toggle theme">
+        <div class="theme-toggle-knob">
+          <span class="theme-toggle-icon" id="theme-icon">🌙</span>
+        </div>
+      </button>
     </div>
   </nav>
 
@@ -33,9 +39,31 @@
 
     <!-- Hero -->
     <div class="hero">
-      <h2>Tokenize &amp; Visualize C Code</h2>
-      <p>Enter C source code below, then click <strong>Visualize Tokens</strong> to see the lexical analysis in real
-        time.</p>
+      <h2>Tokenize, Parse &amp; Visualize C Code</h2>
+      <p>Enter C code, click <strong>Analyze</strong> — see the full compilation pipeline from source to AST.</p>
+    </div>
+
+    <!-- Pipeline banner -->
+    <div class="pipeline-bar">
+      <div class="pipeline-step" id="pip-source">
+        <span class="pip-icon">📄</span>
+        <span>Source Code</span>
+      </div>
+      <span class="pip-arrow">→</span>
+      <div class="pipeline-step" id="pip-lex">
+        <span class="pip-icon">🔤</span>
+        <span>Lexical Analysis</span>
+      </div>
+      <span class="pip-arrow">→</span>
+      <div class="pipeline-step" id="pip-parse">
+        <span class="pip-icon">⚙️</span>
+        <span>Syntax Parser</span>
+      </div>
+      <span class="pip-arrow">→</span>
+      <div class="pipeline-step" id="pip-ast">
+        <span class="pip-icon">🌳</span>
+        <span>AST</span>
+      </div>
     </div>
 
     <!-- Two-column grid -->
@@ -45,7 +73,7 @@
       <div class="card">
         <div class="card-header">
           <div class="card-title">
-            <div class="card-title-icon">✏️</div>
+            <div class="card-title-icon">⌨️</div>
             Code Editor
           </div>
           <span class="card-label">C Language</span>
@@ -60,36 +88,39 @@
             <span class="editor-filename">main.c</span>
           </div>
           <textarea id="code-input" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"
-            placeholder="// Enter your C code here…
-int main() {
-    int a = 5;
-    float b = 3.14;
-    return 0;
-}"></textarea>
+            placeholder="// Enter C code here or click a sample below…"></textarea>
+          <!-- Error line indicator -->
+          <div id="error-line-indicator" class="error-line-indicator" style="display:none;">
+            <span class="err-line-icon">❌</span>
+            <span id="err-line-text"></span>
+          </div>
         </div>
 
-        <!-- Editor footer meta -->
+        <!-- Footer meta -->
         <div class="editor-footer">
-          <span>Supports: keywords, identifiers, numbers, operators, separators</span>
+          <span>Supports: declarations · if-else · while · printf · scanf · expressions</span>
           <span><span id="char-count">0 chars</span> · <span id="line-count">0 lines</span></span>
+        </div>
+
+        <!-- Sample code buttons -->
+        <div class="sample-btn-row">
+          <span class="sample-label">Samples:</span>
+          <button class="sample-btn" data-sample="valid">✅ Valid</button>
+          <button class="sample-btn" data-sample="ifelse">↔️ If-Else</button>
+          <button class="sample-btn" data-sample="while">🔁 While</button>
+          <button class="sample-btn" data-sample="printf">📢 Printf</button>
+          <button class="sample-btn" data-sample="error">⚠️ Error</button>
         </div>
 
         <!-- Action buttons -->
         <div class="btn-row">
-          <button id="visualize-btn" class="btn btn-primary">
+          <button id="analyze-btn" class="btn btn-primary">
             <div class="spinner"></div>
             <svg class="btn-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
               viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <span class="btn-text">Visualize Tokens</span>
-          </button>
-          <button id="sample-btn" class="btn btn-secondary" title="Load sample C code">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Sample
+            <span class="btn-text">Analyze</span>
           </button>
           <button id="clear-btn" class="btn btn-secondary" title="Clear editor">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -100,14 +131,13 @@ int main() {
           </button>
         </div>
 
-        <!-- Keyboard hint -->
-        <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.5rem;text-align:right;">
-          Tip: <kbd
+        <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.4rem;text-align:right;">
+          <kbd
             style="background:var(--bg-tertiary);border:1px solid var(--border);border-radius:4px;padding:0.1rem 0.35rem;font-family:'JetBrains Mono',monospace;font-size:0.68rem;">Ctrl+Enter</kbd>
-          to visualize
+          to analyze
         </p>
 
-        <!-- Error / Success banners -->
+        <!-- Banners -->
         <div id="error-banner" class="banner banner-error">
           <span class="banner-icon">⚠️</span>
           <span id="error-msg"></span>
@@ -125,7 +155,6 @@ int main() {
             <div class="card-title-icon">📊</div>
             Visualization
           </div>
-          <!-- Copy button -->
           <button id="copy-btn" class="copy-btn" title="Copy tokens as text">
             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
@@ -137,26 +166,19 @@ int main() {
 
         <!-- Tab bar -->
         <div class="tabs" role="tablist">
-          <button class="tab-btn active" data-tab="lexical" role="tab" aria-selected="true">
+          <button class="tab-btn active" data-tab="tokens" role="tab" aria-selected="true">
             🔤 Lexical Analysis
           </button>
-          <button class="tab-btn" data-tab="semantic" role="tab" aria-selected="false" disabled>
-            🔍 Semantic
-            <span class="tab-soon">Soon</span>
-          </button>
-          <button class="tab-btn" data-tab="syntax" role="tab" aria-selected="false" disabled>
-            🌳 Syntax
-            <span class="tab-soon">Soon</span>
+          <button class="tab-btn" data-tab="syntax" role="tab" aria-selected="false">
+            🌳 Syntax Analyzer
           </button>
         </div>
 
-        <!-- ── Panel: Lexical ── -->
-        <div id="panel-lexical" class="tab-panel active">
+        <!-- ── Panel: Lexical Analysis ── -->
+        <div id="panel-tokens" class="tab-panel active">
 
-          <!-- Stats chips -->
           <div id="stats-row" class="stats-row" style="display:none;"></div>
 
-          <!-- Token table -->
           <div id="table-wrap" class="table-wrap" style="display:none;">
             <table class="token-table">
               <thead>
@@ -171,14 +193,12 @@ int main() {
             </table>
           </div>
 
-          <!-- Empty state (shown when no tokens yet) -->
           <div id="empty-state" class="empty-state">
             <div class="empty-icon">🔍</div>
-            <p>No tokens to display yet</p>
-            <small>Write some C code and click "Visualize Tokens"</small>
+            <p>No tokens yet</p>
+            <small>Click a sample or write code, then click "Analyze"</small>
           </div>
 
-          <!-- Colored token stream -->
           <div id="stream-section" style="display:none;">
             <div class="card-header" style="margin-top:1.25rem;margin-bottom:0.5rem;">
               <div class="card-title" style="font-size:0.875rem;">
@@ -188,57 +208,174 @@ int main() {
             </div>
             <div id="stream-box" class="stream-box"></div>
 
-            <!-- Legend -->
             <div class="legend">
-              <div class="legend-item"><span class="legend-dot" style="background:#60a5fa"></span>Keywords</div>
-              <div class="legend-item"><span class="legend-dot" style="background:#e2e8f0"></span>Identifiers</div>
-              <div class="legend-item"><span class="legend-dot" style="background:#34d399"></span>Numbers</div>
-              <div class="legend-item"><span class="legend-dot" style="background:#f87171"></span>Operators</div>
-              <div class="legend-item"><span class="legend-dot" style="background:#a78bfa"></span>Separators</div>
-              <div class="legend-item"><span class="legend-dot" style="background:#fb923c"></span>Strings</div>
-              <div class="legend-item"><span class="legend-dot" style="background:#fbbf24"></span>Unknown</div>
+              <div class="legend-item"><span class="legend-dot" style="background:var(--tok-keyword)"></span>Keywords
+              </div>
+              <div class="legend-item"><span class="legend-dot"
+                  style="background:var(--tok-identifier)"></span>Identifiers</div>
+              <div class="legend-item"><span class="legend-dot" style="background:var(--tok-number)"></span>Numbers
+              </div>
+              <div class="legend-item"><span class="legend-dot" style="background:var(--tok-operator)"></span>Operators
+              </div>
+              <div class="legend-item"><span class="legend-dot"
+                  style="background:var(--tok-separator)"></span>Separators</div>
+              <div class="legend-item"><span class="legend-dot" style="background:var(--tok-string)"></span>Strings
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- ── Panel: Semantic ── -->
-        <div id="panel-semantic" class="tab-panel">
-          <div class="coming-soon">
-            <div class="cs-icon">🔍</div>
-            <h3>Semantic Analysis</h3>
-            <p>Symbol table generation, variable tracking, scope management, and type checking will be available in
-              Phase 2.</p>
-            <div class="coming-soon-badge">🚧 Coming Soon</div>
-            <small style="color:var(--text-muted);font-size:0.75rem;">This feature is under development</small>
-          </div>
-        </div>
-
-        <!-- ── Panel: Syntax ── -->
+        <!-- ── Panel: Syntax Analyzer ── -->
         <div id="panel-syntax" class="tab-panel">
-          <div class="coming-soon">
-            <div class="cs-icon">🌳</div>
-            <h3>Syntax Analysis</h3>
-            <p>Parse tree visualization, AST generation, and syntax error reporting will be available in Phase 3.</p>
-            <div class="coming-soon-badge">🚧 Coming Soon</div>
-            <small style="color:var(--text-muted);font-size:0.75rem;">This feature is under development</small>
-          </div>
-        </div>
 
+          <!-- Structured error box -->
+          <div id="parse-error-box" class="parse-error-box" style="display:none;"></div>
+
+          <!-- Collapsible Grammar panel -->
+          <div class="grammar-panel">
+            <button class="grammar-toggle" id="grammar-toggle" aria-expanded="false">
+              <span>📖 Supported Grammar</span>
+              <span class="grammar-arrow">▶</span>
+            </button>
+            <div class="grammar-body" id="grammar-body" style="display:none;">
+              <table class="grammar-table">
+                <thead>
+                  <tr>
+                    <th>Rule</th>
+                    <th>Production</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Declaration</td>
+                    <td><code>TYPE IDENTIFIER ;</code></td>
+                  </tr>
+                  <tr>
+                    <td>Init Decl</td>
+                    <td><code>TYPE IDENTIFIER = expression ;</code></td>
+                  </tr>
+                  <tr>
+                    <td>Assignment</td>
+                    <td><code>IDENTIFIER = expression ;</code></td>
+                  </tr>
+                  <tr>
+                    <td>IfStmt</td>
+                    <td><code>if ( expr ) { stmts } else { stmts }</code></td>
+                  </tr>
+                  <tr>
+                    <td>WhileStmt</td>
+                    <td><code>while ( expr ) { stmts }</code></td>
+                  </tr>
+                  <tr>
+                    <td>Printf</td>
+                    <td><code>printf ( "format" , args ) ;</code></td>
+                  </tr>
+                  <tr>
+                    <td>Scanf</td>
+                    <td><code>scanf ( "format" , &amp;id ) ;</code></td>
+                  </tr>
+                  <tr>
+                    <td>Return</td>
+                    <td><code>return expression ;</code></td>
+                  </tr>
+                  <tr>
+                    <td>Expression</td>
+                    <td><code>comparison → additive → term → factor</code></td>
+                  </tr>
+                  <tr>
+                    <td>Comparison</td>
+                    <td><code>expr ( == | != | &lt; | &gt; | &lt;= | &gt;= ) expr</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- AST area -->
+          <div id="ast-empty" class="empty-state">
+            <div class="empty-icon">🌳</div>
+            <p>No parse tree yet</p>
+            <small>Click "Analyze" to build the syntax tree</small>
+          </div>
+
+          <div id="ast-container" class="ast-container" style="display:none;">
+            <div class="ast-legend">
+              <span class="ast-legend-label">Node types:</span>
+              <span class="ast-badge node-Program">Program</span>
+              <span class="ast-badge node-VarDecl">VarDecl</span>
+              <span class="ast-badge node-Assign">Assign</span>
+              <span class="ast-badge node-If">If</span>
+              <span class="ast-badge node-While">While</span>
+              <span class="ast-badge node-Printf">Printf</span>
+              <span class="ast-badge node-Scanf">Scanf</span>
+              <span class="ast-badge node-BinaryOp">BinaryOp</span>
+              <span class="ast-badge node-expr">Leaf</span>
+            </div>
+            <div id="ast-tree" class="ast-tree"></div>
+          </div>
+
+          <!-- Parser Trace -->
+          <div class="trace-panel">
+            <button class="trace-toggle" id="trace-toggle" aria-expanded="false">
+              <span>🔎 Parser Trace</span>
+              <span class="trace-arrow">▶</span>
+            </button>
+            <div class="trace-body" id="trace-body" style="display:none;">
+              <pre id="trace-content" class="trace-content">Run an analysis to see parser steps…</pre>
+            </div>
+          </div>
+
+        </div><!-- /panel-syntax -->
       </div><!-- /right card -->
     </div><!-- /grid -->
   </main>
 
   <script src="app.js"></script>
 
-  <!-- Hide empty state when tokens are shown -->
   <script>
-    const _emptyState = document.getElementById('empty-state');
-    const _tableWrap = document.getElementById('table-wrap');
-    const _observer = new MutationObserver(() => {
-      _emptyState.style.display = _tableWrap.style.display === 'none' ? 'flex' : 'none';
+    /* ── Theme toggle ── */
+    const _html = document.documentElement;
+    const _toggle = document.getElementById('theme-toggle');
+    const _themeIcon = document.getElementById('theme-icon');
+
+    function applyTheme(theme) {
+      _html.setAttribute('data-theme', theme);
+      _themeIcon.textContent = theme === 'dark' ? '🌙' : '☀️';
+      localStorage.setItem('cparser-theme', theme);
+    }
+
+    const saved = localStorage.getItem('cparser-theme') || 'dark';
+    applyTheme(saved);
+
+    _toggle.addEventListener('click', () => {
+      applyTheme(_html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
     });
-    _observer.observe(_tableWrap, { attributes: true, attributeFilter: ['style'] });
+
+    /* ── Grammar panel toggle ── */
+    const grammarToggle = document.getElementById('grammar-toggle');
+    const grammarBody = document.getElementById('grammar-body');
+    const grammarArrow = grammarToggle.querySelector('.grammar-arrow');
+
+    grammarToggle.addEventListener('click', () => {
+      const open = grammarBody.style.display === 'none';
+      grammarBody.style.display = open ? 'block' : 'none';
+      grammarArrow.textContent = open ? '▼' : '▶';
+      grammarToggle.setAttribute('aria-expanded', open);
+    });
+
+    /* ── Trace panel toggle ── */
+    const traceToggle = document.getElementById('trace-toggle');
+    const traceBody = document.getElementById('trace-body');
+    const traceArrow = traceToggle.querySelector('.trace-arrow');
+
+    traceToggle.addEventListener('click', () => {
+      const open = traceBody.style.display === 'none';
+      traceBody.style.display = open ? 'block' : 'none';
+      traceArrow.textContent = open ? '▼' : '▶';
+      traceToggle.setAttribute('aria-expanded', open);
+    });
   </script>
+
 </body>
 
 </html>

@@ -1,0 +1,652 @@
+================================================================================
+    C PARSER VISUALIZER — FULL PROJECT AUDIT
+    Date: 25 February 2026
+================================================================================
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  SECTION 1:  WHAT IS COMPLETED (Working Features)                          ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+─── BACKEND (Flask API) ───────────────────────────────────────────────────────
+
+  ✅ Flask app with two endpoints:
+       GET  /           → Health check (returns API info)
+       POST /tokenize   → Lexical analysis only (Phase 1 backward compat)
+       POST /parse      → Full lexical + syntax analysis (Phase 2)
+
+  ✅ CORS configured via .env (supports multiple origins)
+
+  ✅ Environment variables: HOST, PORT, FLASK_DEBUG, CORS_ORIGINS
+
+  ✅ Virtual environment setup with setup.bat, run.bat scripts
+
+
+─── LEXER (Phase 1: Lexical Analysis) ────────────────────────────────────────
+
+  ✅ Regex-based tokenizer with master pattern (efficient single-pass matching)
+  ✅ Supported token types:
+       KEYWORD, IDENTIFIER, NUMBER, OPERATOR, SEPARATOR, STRING,
+       WHITESPACE (skipped), COMMENT (skipped), UNKNOWN
+  ✅ C keywords: int, float, char, if, else, while, for, return, printf, scanf
+  ✅ Operators: + - * / = == != < > <= >= ++ --
+  ✅ Separators: ; { } ( ) , &
+  ✅ String literal support with escape sequences
+  ✅ Single-line (//) and multi-line (/* */) comments
+  ✅ Float/integer number recognition
+  ✅ Multi-char operators handled before single-char (correct precedence)
+  ✅ Keyword vs identifier promotion logic
+  ✅ Line number tracking per token
+  ✅ tokenize_to_dict() for JSON serialization
+
+
+─── PARSER (Phase 2: Syntax Analysis) ────────────────────────────────────────
+
+  ✅ Recursive descent parser (CParser class)
+  ✅ Supported grammar:
+       • Variable declarations:     int a;  int a = 10;  float x = 3.14;
+       • Assignments:               a = expr;
+       • If-Else statements:        if (expr) { stmts } else { stmts }
+       • While loops:               while (expr) { stmts }
+       • Printf:                    printf("format", args...);
+       • Scanf:                     scanf("format", &var...);
+       • Return:                    return expr;
+       • Block statements:          { stmts }
+       • Prefix/Postfix:            ++i;  i++;  --i;  i--;
+  ✅ Expression parsing with correct precedence:
+       comparison → additive → term → factor
+       (comparison ops, +/-, */, unary, parenthesized, literals)
+  ✅ Partial AST on error (shows tree up to the error point)
+  ✅ Error sentinel nodes (❌ SyntaxError leaf in AST)
+  ✅ Human-friendly error messages with line, expected, got
+  ✅ Parser trace/step log for debugging
+  ✅ Full AST serialization to dict via to_dict()
+
+
+─── AST NODES ────────────────────────────────────────────────────────────────
+
+  ✅ 10 AST node classes:
+       ProgramNode, VarDeclNode, AssignNode, IfNode, WhileNode,
+       PrintfNode, ScanfNode, BinaryOpNode, UnaryOpNode,
+       NumberNode, IdentNode, StringNode
+  ✅ Internal helper nodes: _ErrorSentinel, _ReturnNode,
+       _PostfixStmtNode, _PrefixStmtNode
+  ✅ Each node has to_dict() with type, label, line, children
+
+
+─── FRONTEND (HTML/CSS/JS) ───────────────────────────────────────────────────
+
+  ✅ Migrated from React to vanilla HTML/CSS/JS (no framework dependency)
+  ✅ Premium dark/light theme with toggle (saved to localStorage)
+  ✅ Navbar with "C" logo, API Live badge, theme toggle
+  ✅ Hero section with title and description
+  ✅ Pipeline visualization bar: Source Code → Lexical → Parser → AST
+       (animates through stages on analyze)
+  ✅ Code editor with:
+       • macOS-style window chrome (red/yellow/green dots)
+       • "main.c" filename badge
+       • Character and line count
+       • Keyboard shortcut (Ctrl+Enter)
+       • Resize support
+  ✅ Sample code buttons: Valid, If-Else, While, Printf, Error
+  ✅ Analyze button with loading spinner
+  ✅ Clear button
+  ✅ Two-tab visualization panel:
+       Tab 1 — Lexical Analysis:
+         • Token table with #, Type, Value, Line
+         • Colored token badges per type
+         • Stats chips (counts per token type)
+         • Colored token stream with hover effects
+         • Token color legend
+       Tab 2 — Syntax Analyzer:
+         • Collapsible grammar panel (shows supported grammar rules)
+         • AST tree with collapsible nodes
+         • Color-coded AST labels by node type
+         • AST node legend
+         • Structured parse error box (line, expected, got)
+         • Collapsible parser trace panel
+  ✅ Error/success banners with animation
+  ✅ Error line indicator pill
+  ✅ Copy tokens button (copies to clipboard)
+  ✅ Responsive 2-column grid layout
+  ✅ 1941-line premium CSS with:
+       • Google Fonts (Inter + JetBrains Mono)
+       • CSS custom properties for theming
+       • Glassmorphism effects (backdrop-filter blur)
+       • Gradient backgrounds
+       • Smooth transitions and animations
+       • Custom scrollbar styling
+
+
+─── TESTS ────────────────────────────────────────────────────────────────────
+
+  ✅ test_tokenizer.py — 4 tokenizer test cases
+  ✅ test_phase2.py    — 3 integration tests (tokens + AST + errors)
+  ✅ test_api.py       — API endpoint test for /parse
+
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  SECTION 2:  WHAT NEEDS TO BE FIXED (Bugs & Issues)                        ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+─── BUG 1: README.md is outdated ─────────────────────────────────────────────
+
+  SEVERITY: Medium
+  DETAILS:
+    • README still says "Phase 1: Lexical Analysis" as current
+    • Lists Phase 2 as "Semantic Analysis" and Phase 3 as "Syntax Analysis"
+      — but actual Phase 2 is SYNTAX analysis (already done)
+    • Tech stack says "React 18, Vite, Tailwind CSS, Axios"
+      — frontend was migrated to vanilla HTML/CSS/JS
+    • Architecture diagram shows "React Frontend" on port 3000
+      — should be "Vanilla Frontend" served via Vite dev server
+    • Roadmap shows Phase 2/3 as planned, but Phase 2 is done
+    • Missing mention of parser/, ast_nodes.py, /parse endpoint
+    • RUNNING_GUIDE.md referenced but does not exist
+
+
+─── BUG 2: Old React src/ folder still exists ───────────────────────────────
+
+  SEVERITY: Low
+  STATUS:  ✅ FIXED (25 Feb 2026)
+  DETAILS:
+    • Deleted frontend/src/ directory entirely
+    • Removed react, react-dom, axios from package.json
+    • Removed @vitejs/plugin-react, @types/react, @types/react-dom,
+      tailwindcss, autoprefixer, postcss from devDependencies
+    • Deleted tailwind.config.js and postcss.config.js
+    • Cleaned vite.config.js (removed React plugin import)
+    • Ran fresh npm install — node_modules now has only 11 packages
+    • Bumped package.json version to 2.0.0
+
+
+─── BUG 3: API_BASE is hardcoded in app.js ──────────────────────────────────
+
+  SEVERITY: Medium
+  DETAILS:
+    • app.js line 10: const API_BASE = 'http://localhost:5000';
+    • Not reading from .env or any config
+    • Will break if deployed to a server or if backend runs on different port
+    FIX: Read from environment variable or make configurable
+
+
+─── BUG 4: "for" loop is listed as keyword but not parsed ───────────────────
+
+  SEVERITY: Medium
+  DETAILS:
+    • token_types.py includes 'for' in KEYWORDS set
+    • test_tokenizer.py test 4 uses a for-loop
+    • BUT parser.py does NOT have a _parse_for() method
+    • If user enters a for-loop, the parser will throw:
+        "Unrecognised statement starting with `for`"
+    • Either remove 'for' from KEYWORDS or implement for-loop parsing
+    FIX: Implement _parse_for() in parser.py OR remove 'for' from KEYWORDS
+         and document it as unsupported
+
+
+─── BUG 5: Error line highlighting is imprecise ─────────────────────────────
+
+  SEVERITY: Low
+  DETAILS:
+    • highlightErrorLine() adds a CSS class to the textarea (has-error)
+    • But textarea-based highlighting can't highlight a specific line
+    • The scroll-to-error logic uses approximated line height
+    FIX: This is a fundamental textarea limitation. Would need a proper
+         code editor component (CodeMirror/Monaco) to truly highlight lines.
+
+
+─── BUG 6: test_phase2.py has a logic issue ─────────────────────────────────
+
+  SEVERITY: Low
+  DETAILS:
+    • Line 39: checks `if 'error' in r1:` — but 'error' key is ALWAYS
+      present (it's None on success). Should be `if r1['error']:` instead.
+    • Currently the test always prints ERROR instead of the AST.
+    FIX: Change `if 'error' in r1:` to `if r1.get('error'):`
+
+
+─── BUG 7: No error handling for empty token stream ─────────────────────────
+
+  SEVERITY: Low
+  DETAILS:
+    • If user enters only whitespace/comments, tokenizer returns empty list
+    • Parser receives empty list and immediately returns Program with no stmts
+    • This works technically, but could show a better message like
+      "No parseable code found — only whitespace or comments"
+
+
+─── BUG 8: Missing "double" and "long" type support ─────────────────────────
+
+  SEVERITY: Low
+  DETAILS:
+    • parser.py VAR_TYPES = {'int', 'float', 'char', 'double', 'long'}
+    • But token_types.py KEYWORDS doesn't include 'double' or 'long'
+    • So the lexer generates IDENTIFIER tokens for "double" and "long"
+    • Parser expects KEYWORD but gets IDENTIFIER → won't parse
+    FIX: Add 'double' and 'long' to KEYWORDS in token_types.py
+
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  SECTION 3:  WHAT NEEDS TO BE DONE (Remaining Work)                        ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+─── PRIORITY 1: Update README.md ─────────────────────────────────────────────
+
+  • Update to reflect Phase 2 (Syntax Analysis) is complete
+  • Fix tech stack to say "Vanilla HTML/CSS/JS"
+  • Update architecture diagram
+  • Update roadmap to show Phase 2 as done
+  • Document /parse endpoint alongside /tokenize
+  • Fix the project structure section
+  • Remove reference to RUNNING_GUIDE.md (does not exist) or create it
+
+
+─── PRIORITY 2: Clean up dead React code ──── ✅ DONE (25 Feb 2026) ─────────
+
+  ✅ Deleted frontend/src/ directory entirely
+  ✅ Removed react, react-dom, axios from package.json
+  ✅ Removed @vitejs/plugin-react, @types/react, @types/react-dom
+  ✅ Removed tailwindcss, autoprefixer, postcss
+  ✅ Deleted tailwind.config.js, postcss.config.js
+  ✅ Cleaned vite.config.js (removed React plugin)
+  ✅ Fresh npm install — only vite remains as dev dependency
+
+
+─── PRIORITY 3: Fix the 'for' keyword inconsistency ─────────────────────────
+
+  Choose one:
+    OPTION A: Implement for-loop parsing:
+      Add _parse_for() to parser.py
+      Grammar: for ( init ; condition ; increment ) { stmts }
+      This would be impressive for a presentation/hackathon
+
+    OPTION B: Remove 'for' from KEYWORDS:
+      Remove 'for' from token_types.py KEYWORDS
+      Document as unsupported
+
+
+─── PRIORITY 4: Fix 'double'/'long' keyword mismatch ────────────────────────
+
+  • Add 'double' and 'long' to KEYWORDS in token_types.py
+
+
+─── PRIORITY 5: Fix test_phase2.py ──────────────────────────────────────────
+
+  • Fix the error-check condition on line 39
+
+
+─── PRIORITY 6: Phase 3 — Semantic Analysis (if needed for project) ──────────
+
+  This would be the "next phase" if you continue the project:
+    • Symbol table generation (track declared variables and their types)
+    • Type checking (e.g., int + float → type mismatch warning)
+    • Undeclared variable detection
+    • Duplicate declaration detection
+    • Scope management (variables inside if/while blocks)
+    • New /semantic endpoint on backend
+    • New "Semantic Analysis" tab on frontend
+
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  SECTION 4:  IDEAS TO MAKE IT BETTER (Enhancements)                        ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+─── BACKEND ENHANCEMENTS ─────────────────────────────────────────────────────
+
+  1. FOR-LOOP SUPPORT
+     • Add for-loop parsing: for (init; cond; step) { body }
+     • Would show you handle more complex C constructs
+     • Add ForNode AST node class
+
+  2. FUNCTION DEFINITIONS
+     • Support: int main() { ... }  or  void foo(int x) { ... }
+     • Add FunctionNode, ParameterNode AST nodes
+     • This is the biggest "wow" factor addition
+
+  3. ARRAY SUPPORT
+     • Support: int arr[10];  arr[0] = 5;
+     • Add ArrayDeclNode, ArrayAccessNode
+
+  4. DO-WHILE LOOPS
+     • Support: do { body } while (cond);
+     • Easy to add alongside existing while
+
+  5. SWITCH-CASE
+     • Support: switch (x) { case 1: ... break; default: ... }
+     • More complex but impressive
+
+  6. LOGICAL OPERATORS
+     • Support: && || !
+     • Currently only comparison ops are supported
+     • Easy addition to expression parser
+
+  7. COMPOUND ASSIGNMENT OPERATORS
+     • Support: += -= *= /=
+     • Common in real C code
+
+  8. PREPROCESSOR DIRECTIVES
+     • Recognize #include, #define as special tokens
+     • Even just tokenizing them (not parsing) adds realism
+
+  9. BETTER ERROR RECOVERY
+     • Currently parser stops at first error
+     • Could implement "panic mode" recovery (skip to next ; or })
+     • Show multiple errors at once
+
+  10. SEMANTIC ANALYSIS (Phase 3)
+      • Symbol table with variable types and scopes
+      • Type checking warnings
+      • Undeclared variable errors
+      • This is the natural next step after syntax analysis
+
+  11. UNIT TEST FRAMEWORK
+      • Convert test files to use pytest
+      • Add assertion-based tests instead of print-based
+      • Add edge case tests
+
+
+─── FRONTEND ENHANCEMENTS ────────────────────────────────────────────────────
+
+  ████████████████████████████████████████████████████████████████████
+  █                DETAILED FRONTEND IMPROVEMENT PLAN                █
+  ████████████████████████████████████████████████████████████████████
+
+  ── 1. REPLACE TEXTAREA WITH CODE EDITOR (HIGH IMPACT) ──────────────
+
+  WHAT:  Use CodeMirror 6 or Monaco Editor instead of plain <textarea>
+  WHY:   Gives line numbers, true syntax highlighting, proper error
+         line highlighting, bracket matching, auto-indent
+  HOW:
+    • Install codemirror (via CDN or npm):
+        <link href="https://cdn.jsdelivr.net/npm/codemirror@5/lib/codemirror.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/codemirror@5/lib/codemirror.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/codemirror@5/mode/clike/clike.min.js"></script>
+    • Replace <textarea> with a <div id="code-editor"></div>
+    • Initialize: var editor = CodeMirror(element, { mode: 'text/x-csrc' })
+    • Error gutter markers for exact line highlighting
+  FILES TO CHANGE:
+    • index.html — replace textarea with div, add CDN links
+    • app.js — replace codeInput.value with editor.getValue()
+    • style.css — add CodeMirror theme overrides to match your design
+
+
+  ── 2. ADD LINE NUMBERS IN EDITOR (MEDIUM IMPACT) ───────────────────
+
+  WHAT:  Show line numbers alongside the code input
+  WHY:   Error messages reference line numbers but users can't easily
+         count lines in a plain textarea
+  HOW:   If not using CodeMirror, build a custom line-number gutter:
+    • Add a <div class="line-numbers"> next to the textarea
+    • On input/scroll, generate line number spans
+    • Sync scroll position between gutter and textarea
+  FILES TO CHANGE:
+    • index.html — add line-number gutter div
+    • app.js — add scroll sync and line number generation
+    • style.css — style the gutter
+
+
+  ── 3. AST DOWNLOAD / EXPORT (MEDIUM IMPACT) ───────────────────────
+
+  WHAT:  Add buttons to:
+         • Download AST as JSON file
+         • Download AST as PNG image (tree screenshot)
+         • Download tokens as CSV
+  WHY:   Students can save and compare results for assignments
+  HOW:
+    • JSON: Create blob from AST data, trigger download
+    • PNG: Use html2canvas library on the tree container
+    • CSV: Map tokens to CSV string, trigger download
+  FILES TO CHANGE:
+    • index.html — add export buttons in card header
+    • app.js — add download functions
+    • style.css — style export buttons
+
+
+  ── 4. AST ZOOM & PAN (MEDIUM IMPACT) ──────────────────────────────
+
+  WHAT:  Allow pinch-to-zoom and drag-to-pan on the AST tree
+  WHY:   Large programs create big trees that are hard to navigate
+  HOW:
+    • Use CSS transform: scale() on the ast-tree container
+    • Add zoom +/- buttons
+    • Use panzoom library (lightweight, ~3KB)
+    • Or implement with CSS transform + mouse/touch events
+  FILES TO CHANGE:
+    • index.html — add zoom control buttons
+    • app.js — add zoom/pan logic
+    • style.css — style controls, add overflow:hidden to container
+
+
+  ── 5. SEARCH / FILTER TOKENS (LOW IMPACT) ─────────────────────────
+
+  WHAT:  Add a search bar above the token table to filter by type
+         or value
+  WHY:   Large programs produce 50+ tokens, hard to find specifics
+  HOW:
+    • Add <input type="text"> filter above the table
+    • Add type dropdown (KEYWORD, IDENTIFIER, etc.)
+    • Filter displayed rows in JavaScript
+  FILES TO CHANGE:
+    • index.html — add filter input and dropdown
+    • app.js — add filter logic to renderTable()
+    • style.css — style the filter bar
+
+
+  ── 6. ANIMATION IMPROVEMENTS (MEDIUM IMPACT) ──────────────────────
+
+  WHAT:  Add more micro-animations for a polished feel
+  WHERE:
+    • Token table rows: Stagger fade-in when results appear
+    • AST nodes: Animate tree expansion (slide down + fade in)
+    • Pipeline bar: Pulse animation on active step
+    • Success/error banners: Slide in from right instead of just fading
+    • Tab switch: Horizontal slide transition between panels
+  HOW:
+    • Add CSS @keyframes for slide, stagger, pulse
+    • In app.js, add animation delay using index
+    • CSS transition-delay for child elements
+  FILES TO CHANGE:
+    • style.css — add new @keyframes and transition rules
+    • app.js — add staggered animation class application
+
+
+  ── 7. RESPONSIVE MOBILE LAYOUT (HIGH IMPACT) ──────────────────────
+
+  WHAT:  Make the app fully usable on phones and tablets
+  WHY:   Currently the 2-column grid breaks on small screens
+  HOW:
+    • Add media queries for breakpoints:
+        @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    • Stack cards vertically on mobile
+    • Make navbar responsive (hamburger menu or collapsed badges)
+    • Reduce font sizes on mobile
+    • Make tab buttons wrap or scroll horizontally
+  FILES TO CHANGE:
+    • style.css — add responsive media queries (major changes)
+    • index.html — possibly add viewport meta (already has it ✅)
+
+
+  ── 8. KEYBOARD SHORTCUTS PANEL (LOW IMPACT) ───────────────────────
+
+  WHAT:  Show a "?" icon that opens a keyboard shortcuts dialog
+  SHORTCUTS TO ADD:
+    • Ctrl+Enter — Analyze (already works)
+    • Ctrl+L — Clear editor
+    • Ctrl+1 — Switch to Lexical tab
+    • Ctrl+2 — Switch to Syntax tab
+    • Ctrl+S — Download AST as JSON
+    • Ctrl+Shift+C — Copy tokens
+  FILES TO CHANGE:
+    • index.html — add modal/dialog HTML
+    • app.js — add keyboard event listeners, modal toggle
+    • style.css — style the shortcuts modal
+
+
+  ── 9. TOKEN CLICK → AST HIGHLIGHT (HIGH IMPACT, IMPRESSIVE) ──────
+
+  WHAT:  Click a token in the table → highlight the corresponding
+         AST node that uses that token
+  WHY:   Shows students the direct connection between tokens and AST
+  HOW:
+    • Tags tokens with unique IDs
+    • AST nodes already have line numbers
+    • On token click, find AST node(s) on that line
+    • Scroll to and pulse-highlight the matching AST node
+    • On AST node click, highlight tokens on that line in the table
+  FILES TO CHANGE:
+    • app.js — add click handlers, ID mapping, scroll/highlight logic
+    • style.css — add highlight pulse animation classes
+
+
+  ── 10. DARK/LIGHT MODE IMPROVEMENTS (LOW IMPACT) ─────────────────
+
+  WHAT:  Fix minor light-mode issues
+  DETAILS:
+    • Parse error box text colors are hardcoded (#fca5a5) — should use
+      CSS variables so they adapt to light mode
+    • Error header in parse-error-box needs separate light-mode styling
+    • Some AST badge colors in light mode have low contrast
+  FILES TO CHANGE:
+    • style.css — add [data-theme="light"] overrides for:
+        .parse-error-box .err-header, .err-message, .err-details
+        AST label colors for light mode
+
+
+  ── 11. FULLSCREEN MODE FOR AST (LOW IMPACT) ──────────────────────
+
+  WHAT:  Button to expand the AST panel to fullscreen
+  WHY:   Complex programs produce deep trees, need more screen space
+  HOW:
+    • Add a maximize icon button in the Syntax panel
+    • Toggle a .fullscreen-ast class that uses position:fixed,
+      inset:0, z-index:999 with a close button
+  FILES TO CHANGE:
+    • index.html — add fullscreen button
+    • app.js — toggle fullscreen class
+    • style.css — fullscreen overlay styles
+
+
+  ── 12. LOADING SKELETON (LOW IMPACT) ─────────────────────────────
+
+  WHAT:  Show skeleton loading states while waiting for API response
+  WHY:   Better UX than just a spinner button
+  HOW:
+    • Add CSS skeleton animation classes
+    • Show skeleton placeholders in token table / AST area
+    • Remove and replace with real data on response
+  FILES TO CHANGE:
+    • style.css — add .skeleton and .skeleton-line classes
+    • app.js — show/hide skeleton during analyze()
+    • index.html — add skeleton HTML elements
+
+
+  ── 13. FOOTER SECTION (LOW IMPACT) ───────────────────────────────
+
+  WHAT:  Add a simple footer with project info
+  CONTENT:
+    • "Built by [your name] · C Parser Visualizer v2.0 · Phase 2"
+    • GitHub link
+    • "Educational Compiler Visualization Tool"
+  FILES TO CHANGE:
+    • index.html — add <footer> before closing </body>
+    • style.css — style the footer
+
+
+  ── 14. SEO & META TAGS (LOW IMPACT) ──────────────────────────────
+
+  WHAT:  Add Open Graph tags, favicon, proper heading hierarchy
+  WHY:   Better presentation if shared online
+  MISSING:
+    • No favicon (<link rel="icon">)
+    • No og:title, og:description, og:image meta tags
+    • h2 is used as main heading — should be h1
+  FILES TO CHANGE:
+    • index.html — add meta tags and favicon link in <head>
+
+
+  ── 15. TOOLTIP ON AST NODES (LOW IMPACT) ─────────────────────────
+
+  WHAT:  Hover over an AST node → show tooltip with node details
+  DETAILS:
+    • Show: node type, label, line number, number of children
+    • CSS-only tooltip or add a small tooltip library
+  FILES TO CHANGE:
+    • app.js — add title attributes or custom tooltip divs in renderTree()
+    • style.css — tooltip styles
+
+
+─── DEPLOYMENT IMPROVEMENTS ──────────────────────────────────────────────────
+
+  1. DEPLOY TO VERCEL / NETLIFY (Frontend) + RENDER / RAILWAY (Backend)
+     • Frontend is just static HTML/CSS/JS — perfect for Vercel/Netlify
+     • Backend is Flask — deploy on Render, Railway, or Fly.io
+     • Add environment variable for API_BASE on the frontend
+
+  2. DOCKER SUPPORT
+     • Add Dockerfile for backend
+     • Add docker-compose.yml for running both services
+     • Makes it easy for anyone to run the project
+
+  3. GITHUB PAGES (for frontend only, with backend on Render)
+     • Free hosting
+     • Add GitHub Actions CI/CD pipeline
+
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  SECTION 5:  QUICK WINS (Can be done in < 30 min each)                     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+  1. ✏️ Fix README.md (~10 min)
+  2. 🗑️ Delete old React src/ folder, clean package.json (~5 min)
+  3. 🐛 Fix test_phase2.py condition check (~2 min)
+  4. 🐛 Add 'double','long' to KEYWORDS (~2 min)
+  5. 📝 Add footer to index.html (~10 min)
+  6. 🎨 Add favicon (~5 min)
+  7. 🎨 Fix light-mode colors for parse error box (~10 min)
+  8. 📥 Add "Download AST as JSON" button (~15 min)
+  9. 📥 Add "Download tokens as CSV" button (~15 min)
+  10. ⌨️ Add Ctrl+L shortcut for Clear (~5 min)
+
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  SECTION 6:  OVERALL SCORE & SUMMARY                                       ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+  BACKEND COMPLETENESS:    ████████████████████░░░░  85%
+    Phase 1 (Lexer):       ██████████████████████████ 100%
+    Phase 2 (Parser):      ██████████████████████░░  90%
+    Phase 3 (Semantic):    ░░░░░░░░░░░░░░░░░░░░░░░░ 0%
+
+  FRONTEND COMPLETENESS:   ██████████████████████░░  88%
+    UI / Design:           ██████████████████████████ 95%
+    Functionality:         ████████████████████░░░░  85%
+    Responsive:            ████████░░░░░░░░░░░░░░░░ 40%
+
+  CODE QUALITY:            ██████████████████████░░  90%
+    Hardcoded API URL, minor test bugs (dead React code cleaned up ✅)
+
+  DOCUMENTATION:           ████████████░░░░░░░░░░░░ 50%
+    README is outdated and references non-existent files
+
+  TESTING:                 ██████████░░░░░░░░░░░░░░  45%
+    Only print-based tests, no pytest/assertions, no edge cases
+
+  OVERALL:                 ~78% complete, very solid for Phases 1-2
+
+
+  TOP 5 PRIORITIES TO DO NEXT:
+    1. Fix README (outdated info will confuse anyone looking at the repo)
+    2. ✅ Delete old React code — DONE
+    3. Fix for-loop keyword inconsistency (will cause confusing errors)
+    4. Add responsive mobile CSS (makes it usable on more devices)
+    5. Add export buttons (JSON/CSV download — easy impressive feature)
+
+
+================================================================================
+    END OF AUDIT
+================================================================================

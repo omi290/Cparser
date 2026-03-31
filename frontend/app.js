@@ -267,51 +267,244 @@ function renderTrace(traceSteps) {
   traceContent.textContent = traceSteps.join('\n');
 }
 
-/* ─── AST Tree renderer ──────────────────────────────────────────── */
-function renderTree(node, container, depth = 0) {
-  if (!node) return;
+/* ─── AST Visual Tree (D3.js) ────────────────────────────────────── */
 
-  const nodeEl = document.createElement('div');
-  nodeEl.className = 'ast-node';
+/* Node colour palette per AST node type */
+const NODE_FILL = {
+  Program:    '#6366f1', VarDecl:    '#3b82f6', Assign:     '#ef4444',
+  If:         '#8b5cf6', While:      '#10b981', Condition:  '#06b6d4',
+  Body:       '#14b8a6', Then:       '#10b981', Else:       '#f97316',
+  BinaryOp:   '#ec4899', UnaryOp:    '#e11d48', Number:     '#22c55e',
+  Identifier: '#64748b', Printf:     '#f59e0b', Scanf:      '#d946ef',
+  String:     '#fb923c', Format:     '#78716c', Ref:        '#0ea5e9',
+  Return:     '#84cc16', PostfixStmt:'#ef4444', PrefixStmt: '#ef4444',
+  SyntaxError:'#dc2626',
+};
+const NODE_FILL_DEFAULT = '#6366f1';
 
-  const hasChildren = node.children && node.children.length > 0;
-
-  const typeClass = node.isError
-    ? 'ast-label-SyntaxError'
-    : (TYPED_NODES.has(node.type) ? `ast-label-${node.type}` : 'ast-label-default');
-
-  const labelEl = document.createElement('div');
-  labelEl.className = `ast-node-label ${typeClass}`;
-
-  const toggle = hasChildren ? `<span class="ast-toggle">▼</span>` : `<span class="ast-leaf-dot"></span>`;
-  const lineTag = node.line ? `<span class="ast-line-tag">L${node.line}</span>` : '';
-
-  labelEl.innerHTML = `
-    ${toggle}
-    <span class="ast-type-tag">${escapeHtml(node.type)}</span>
-    <span class="ast-label-text">${escapeHtml(node.label || node.type)}</span>
-    ${lineTag}`;
-
-  if (hasChildren) {
-    labelEl.classList.add('collapsible');
+/* Short display label for each node type */
+function getNodeShortLabel(data) {
+  switch (data.type) {
+    case 'Program':    return 'Program';
+    case 'VarDecl':    return data.name ? `${data.varType || 'var'} ${data.name}` : (data.label || 'VarDecl');
+    case 'Assign':     return data.name ? `${data.name} =` : '=';
+    case 'If':         return 'if';
+    case 'While':      return 'while';
+    case 'Condition':  return 'condition';
+    case 'Body':       return 'body';
+    case 'Then':       return 'then';
+    case 'Else':       return 'else';
+    case 'BinaryOp':   return data.op || 'op';
+    case 'UnaryOp':    return data.op || 'op';
+    case 'Number':     return data.value !== undefined ? String(data.value) : '';
+    case 'Identifier': return data.name || 'id';
+    case 'Printf':    return 'printf()';
+    case 'Scanf':     return 'scanf()';
+    case 'String':    return data.value ? `"${data.value}"` : 'str';
+    case 'Format':    return data.label ? data.label.replace('Format: ', '') : 'fmt';
+    case 'Ref':       return data.label || '&ref';
+    case 'Return':    return 'return';
+    default:          return data.label || data.type;
   }
-
-  nodeEl.appendChild(labelEl);
-
-  if (hasChildren) {
-    const childrenEl = document.createElement('div');
-    childrenEl.className = 'ast-node-children';
-    node.children.forEach(child => renderTree(child, childrenEl, depth + 1));
-    nodeEl.appendChild(childrenEl);
-
-    labelEl.addEventListener('click', () => {
-      const collapsed = nodeEl.classList.toggle('collapsed');
-      labelEl.querySelector('.ast-toggle').textContent = collapsed ? '▶' : '▼';
-    });
-  }
-
-  container.appendChild(nodeEl);
 }
+
+/* Measure approx text width for node sizing */
+let _measureCanvas = null;
+function estimateTextWidth(text, fontSize = 13) {
+  if (!_measureCanvas) {
+    _measureCanvas = document.createElement('canvas').getContext('2d');
+  }
+  _measureCanvas.font = `600 ${fontSize}px 'Inter', sans-serif`;
+  return _measureCanvas.measureText(text).width;
+}
+
+/* Shared zoom behaviour — stored so zoom controls can use it */
+let _treeZoom = null;
+let _treeSvg  = null;
+
+/* ── Main tree render ─────────────────────────────────────────────── */
+function renderTree(astData, container) {
+  // Clear previous
+  container.innerHTML = '';
+  if (!astData) return;
+
+  /* Build D3 hierarchy */
+  const root = d3.hierarchy(astData, d => d.children && d.children.length ? d.children : null);
+
+  /* Tree layout */
+  const nodeHGap = 28;   // horizontal gap between siblings
+  const nodeVGap = 80;   // vertical gap between levels
+  const nodeH    = 48;   // node height
+
+  // Compute dynamic node width based on label
+  root.descendants().forEach(d => {
+    const label = getNodeShortLabel(d.data);
+    d._label = label;
+    d._w = Math.max(60, estimateTextWidth(label, 13) + 36);
+  });
+
+  // Using nodeSize for proper spacing
+  const treeLayout = d3.tree()
+    .nodeSize([1, nodeVGap])
+    .separation((a, b) => {
+      return ((a._w || 80) + (b._w || 80)) / 2 / 50 + 0.5;
+    });
+
+  treeLayout(root);
+
+  // Scale x coords by a factor for real pixel space
+  const xScale = 50;
+  root.descendants().forEach(d => {
+    d.x = d.x * xScale;
+  });
+
+  /* Compute bounds */
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  root.descendants().forEach(d => {
+    const hw = (d._w || 80) / 2;
+    if (d.x - hw < minX) minX = d.x - hw;
+    if (d.x + hw > maxX) maxX = d.x + hw;
+    if (d.y < minY) minY = d.y;
+    if (d.y + nodeH > maxY) maxY = d.y + nodeH;
+  });
+
+  const treePad = 40;
+  const treeW = (maxX - minX) + treePad * 2;
+  const treeH = (maxY - minY) + treePad * 2;
+
+  /* Create SVG — use explicit pixel size from the container
+     (CSS height:100% fails inside flex layouts) */
+  const containerRect = container.getBoundingClientRect();
+  const svgW = Math.max(containerRect.width, 300);
+  const svgH = Math.max(containerRect.height, 400);
+
+  const svg = d3.select(container)
+    .append('svg')
+    .attr('width', svgW)
+    .attr('height', svgH)
+    .attr('class', 'ast-svg');
+
+  const g = svg.append('g')
+    .attr('class', 'ast-zoom-group');
+
+  /* Zoom */
+  const zoom = d3.zoom()
+    .scaleExtent([0.15, 3])
+    .on('zoom', event => {
+      g.attr('transform', event.transform);
+    });
+
+  svg.call(zoom);
+  _treeZoom = zoom;
+  _treeSvg  = svg;
+
+  /* ── Draw links (curved) ─────────────────────────────────────────── */
+  g.selectAll('.tree-link')
+    .data(root.links())
+    .join('path')
+    .attr('class', 'tree-link')
+    .attr('d', d => {
+      const sx = d.source.x;
+      const sy = d.source.y + nodeH / 2;
+      const tx = d.target.x;
+      const ty = d.target.y - nodeH / 2;
+      const midY = (sy + ty) / 2;
+      return `M${sx},${sy} C${sx},${midY} ${tx},${midY} ${tx},${ty}`;
+    });
+
+  /* ── Draw nodes ──────────────────────────────────────────────────── */
+  const nodes = g.selectAll('.tree-node')
+    .data(root.descendants())
+    .join('g')
+    .attr('class', 'tree-node')
+    .attr('transform', d => `translate(${d.x},${d.y})`);
+
+  // Rounded-rect background (pill shape)
+  nodes.append('rect')
+    .attr('class', 'tree-node-bg')
+    .attr('x', d => -(d._w || 80) / 2)
+    .attr('y', -nodeH / 2)
+    .attr('width', d => d._w || 80)
+    .attr('height', nodeH)
+    .attr('rx', nodeH / 2)
+    .attr('ry', nodeH / 2)
+    .attr('fill', d => NODE_FILL[d.data.type] || NODE_FILL_DEFAULT)
+    .attr('stroke', d => {
+      const c = NODE_FILL[d.data.type] || NODE_FILL_DEFAULT;
+      return d3.color(c).brighter(0.6);
+    })
+    .attr('stroke-width', 2);
+
+  // Type label (small, top)
+  nodes.append('text')
+    .attr('class', 'tree-type-label')
+    .attr('y', -5)
+    .attr('text-anchor', 'middle')
+    .text(d => d.data.type.toUpperCase());
+
+  // Value label (main, bottom)
+  nodes.append('text')
+    .attr('class', 'tree-value-label')
+    .attr('y', 13)
+    .attr('text-anchor', 'middle')
+    .text(d => d._label);
+
+  /* ── Initial fit (delayed so layout is ready) ───────────────────── */
+  requestAnimationFrame(() => {
+    // Re-measure container in case flex sizing settled
+    _resizeSvg();
+    fitTree();
+  });
+}
+
+/* Resize SVG to match current container size */
+function _resizeSvg() {
+  if (!_treeSvg) return;
+  const container = _treeSvg.node().parentElement;
+  if (!container) return;
+  const rect = container.getBoundingClientRect();
+  const w = Math.max(rect.width, 300);
+  const h = Math.max(rect.height, 400);
+  _treeSvg.attr('width', w).attr('height', h);
+}
+
+/* Fit tree to container — all nodes visible, centered */
+function fitTree() {
+  if (!_treeSvg || !_treeZoom) return;
+  const svgEl = _treeSvg.node();
+  const gEl   = svgEl.querySelector('.ast-zoom-group');
+  if (!gEl) return;
+
+  // Re-sync SVG dimensions first
+  _resizeSvg();
+
+  const bbox = gEl.getBBox();
+  const rect = svgEl.getBoundingClientRect();
+  const cW   = rect.width;
+  const cH   = rect.height;
+  if (cW === 0 || cH === 0) return;
+
+  const pad    = 30;
+  const scaleX = (cW - pad * 2) / (bbox.width  || 1);
+  const scaleY = (cH - pad * 2) / (bbox.height || 1);
+  const scale  = Math.min(scaleX, scaleY);  // no cap — fill the box
+  const tx     = cW / 2 - (bbox.x + bbox.width  / 2) * scale;
+  const ty     = cH / 2 - (bbox.y + bbox.height / 2) * scale;
+
+  _treeSvg.transition().duration(450).call(
+    _treeZoom.transform,
+    d3.zoomIdentity.translate(tx, ty).scale(scale)
+  );
+}
+
+/* ── Zoom controls ─────────────────────────────────────────────────── */
+document.getElementById('zoom-in-btn')?.addEventListener('click', () => {
+  if (_treeSvg && _treeZoom) _treeSvg.transition().duration(300).call(_treeZoom.scaleBy, 1.4);
+});
+document.getElementById('zoom-out-btn')?.addEventListener('click', () => {
+  if (_treeSvg && _treeZoom) _treeSvg.transition().duration(300).call(_treeZoom.scaleBy, 0.7);
+});
+document.getElementById('zoom-fit-btn')?.addEventListener('click', fitTree);
 
 /* ─── Main analyze ───────────────────────────────────────────────── */
 async function analyze() {
@@ -369,7 +562,7 @@ async function analyze() {
     astTree.innerHTML = '';
 
     if (ast) {
-      renderTree(ast, astTree, 0);
+      renderTree(ast, astTree);
       astContainer.style.display = 'block';
       astEmpty.style.display = 'none';
     } else {
@@ -460,6 +653,11 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
     // Copy button only on tokens tab
     copyBtn.style.display = btn.dataset.tab === 'tokens' ? 'inline-flex' : 'none';
+
+    // Re-fit tree when switching to syntax tab
+    if (btn.dataset.tab === 'syntax') {
+      setTimeout(fitTree, 80);
+    }
   });
 });
 

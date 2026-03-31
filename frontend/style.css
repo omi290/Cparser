@@ -1077,342 +1077,124 @@ body[data-theme="light"] {
   flex-direction: column;
   flex: 1;
   animation: fadeSlideIn 0.3s ease;
+  position: relative;
 }
 
 .ast-tree {
-  overflow: auto;
   flex: 1;
-  padding: 0.5rem 0.25rem;
-}
-
-/* ─── AST Node Layout ────────────────────────────────────────────── */
-.ast-node {
+  min-height: 420px;
   position: relative;
-  margin: 0;
-}
-
-/* Vertical guide line on left of children */
-.ast-node-children {
-  position: relative;
-  padding-left: 2rem;
-  margin-left: 14px;
-  border-left: 2px solid var(--border);
-  margin-top: 2px;
-  padding-top: 2px;
-  transition: border-color 0.35s;
-}
-
-/* Horizontal connector from border to label */
-.ast-node-children>.ast-node::before {
-  content: '';
-  position: absolute;
-  left: -2rem;
-  top: 16px;
-  width: 1.5rem;
-  height: 2px;
-  background: var(--border);
-  transition: background 0.35s;
-}
-
-/* Collapsed state */
-.ast-node.collapsed>.ast-node-children {
-  display: none;
-}
-
-/* ─── Node Label (the pill) ──────────────────────────────────────── */
-.ast-node-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.42rem 0.9rem 0.42rem 0.6rem;
-  border-radius: 8px;
-  border: 1.5px solid;
-  font-size: 0.875rem;
-  font-family: 'JetBrains Mono', monospace;
-  line-height: 1.4;
-  transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
-  max-width: calc(100% - 0.5rem);
-  margin: 4px 0;
-  position: relative;
-}
-
-.ast-node-label.collapsible {
-  cursor: pointer;
-  user-select: none;
-}
-
-.ast-node-label.collapsible:hover {
-  opacity: 0.9;
-  transform: translateX(3px);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-}
-
-[data-theme="light"] .ast-node-label.collapsible:hover {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-}
-
-/* Toggle arrow */
-.ast-toggle {
-  font-size: 0.58rem;
-  opacity: 0.8;
-  flex-shrink: 0;
-  width: 10px;
-  transition: transform 0.25s;
-}
-
-/* Leaf dot */
-.ast-leaf-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.7;
-  flex-shrink: 0;
-}
-
-/* Type tag (e.g. VARDECL) */
-.ast-type-tag {
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  opacity: 0.7;
-  flex-shrink: 0;
-  text-transform: uppercase;
-  background: rgba(0, 0, 0, 0.15);
-  padding: 0.05rem 0.35rem;
-  border-radius: 3px;
-}
-
-[data-theme="light"] .ast-type-tag {
-  background: rgba(0, 0, 0, 0.1);
-  color: inherit;
-  opacity: 1;
-}
-
-/* Main label text */
-.ast-label-text {
-  font-weight: 500;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 340px;
-  flex: 1;
-  font-size: 0.875rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  transition: background 0.35s, border-color 0.35s;
 }
 
-/* Line number tag */
-.ast-line-tag {
-  margin-left: auto;
-  font-size: 0.58rem;
-  opacity: 0.45;
-  flex-shrink: 0;
-  padding-left: 0.5rem;
+.ast-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  cursor: grab;
 }
 
-/* ─── Per-node-type colours ──────────────────────────────────────── */
-/* Dark mode */
-.ast-label-Program,
-.ast-label-Program .ast-type-tag {
-  background-color: rgba(99, 102, 241, 0.22);
-  border-color: rgba(99, 102, 241, 0.6);
-  color: #c7d2fe;
+.ast-svg:active {
+  cursor: grabbing;
 }
 
-.ast-label-VarDecl,
-.ast-label-VarDecl .ast-type-tag {
-  background-color: rgba(96, 165, 250, 0.18);
-  border-color: rgba(96, 165, 250, 0.55);
-  color: #bfdbfe;
+/* ─── Tree Links ─────────────────────────────────────────────────── */
+.tree-link {
+  fill: none;
+  stroke: rgba(148, 163, 184, 0.4);
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition: stroke 0.3s;
 }
 
-.ast-label-Assign,
-.ast-label-PostfixStmt,
-.ast-label-PrefixStmt {
-  background-color: rgba(248, 113, 113, 0.18);
-  border-color: rgba(248, 113, 113, 0.5);
-  color: #fecaca;
+[data-theme="light"] .tree-link {
+  stroke: rgba(100, 116, 139, 0.3);
 }
 
-.ast-label-If {
-  background-color: rgba(167, 139, 250, 0.2);
-  border-color: rgba(167, 139, 250, 0.55);
-  color: #ddd6fe;
+/* ─── Tree Nodes ─────────────────────────────────────────────────── */
+.tree-node-bg {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
+  transition: filter 0.2s, transform 0.2s;
+  cursor: default;
 }
 
-.ast-label-While {
-  background-color: rgba(52, 211, 153, 0.18);
-  border-color: rgba(52, 211, 153, 0.5);
-  color: #a7f3d0;
+.tree-node:hover .tree-node-bg {
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.4)) brightness(1.12);
 }
 
-.ast-label-Printf,
-.ast-label-Scanf {
-  background-color: rgba(251, 146, 60, 0.18);
-  border-color: rgba(251, 146, 60, 0.5);
-  color: #fed7aa;
+[data-theme="light"] .tree-node-bg {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.12));
 }
 
-.ast-label-Return {
-  background-color: rgba(245, 158, 11, 0.18);
-  border-color: rgba(245, 158, 11, 0.5);
-  color: #fde68a;
+[data-theme="light"] .tree-node:hover .tree-node-bg {
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.18)) brightness(1.08);
 }
 
-.ast-label-BinaryOp,
-.ast-label-UnaryOp {
-  background-color: rgba(236, 72, 153, 0.18);
-  border-color: rgba(236, 72, 153, 0.5);
-  color: #fbcfe8;
+/* Type label (small, upper line) */
+.tree-type-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  fill: rgba(255, 255, 255, 0.65);
+  pointer-events: none;
+  text-transform: uppercase;
 }
 
-.ast-label-Number {
-  background-color: rgba(52, 211, 153, 0.12);
-  border-color: rgba(52, 211, 153, 0.4);
-  color: #6ee7b7;
+/* Value label (main, lower line) */
+.tree-value-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  fill: #fff;
+  pointer-events: none;
 }
 
-.ast-label-Identifier {
-  background-color: rgba(148, 163, 184, 0.12);
-  border-color: rgba(148, 163, 184, 0.35);
-  color: #cbd5e1;
+/* ─── Zoom Controls ──────────────────────────────────────────────── */
+.tree-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 10;
 }
 
-.ast-label-String {
-  background-color: rgba(251, 146, 60, 0.12);
-  border-color: rgba(251, 146, 60, 0.4);
-  color: #fdba74;
+.tree-ctrl-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  padding: 0;
+  line-height: 1;
 }
 
-.ast-label-Condition {
-  background-color: rgba(167, 139, 250, 0.12);
-  border-color: rgba(167, 139, 250, 0.4);
-  color: #c4b5fd;
+.tree-ctrl-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  transform: scale(1.08);
 }
 
-.ast-label-Then {
-  background-color: rgba(52, 211, 153, 0.10);
-  border-color: rgba(52, 211, 153, 0.35);
-  color: #6ee7b7;
-}
-
-.ast-label-Else {
-  background-color: rgba(248, 113, 113, 0.12);
-  border-color: rgba(248, 113, 113, 0.4);
-  color: #fca5a5;
-}
-
-.ast-label-Body {
-  background-color: rgba(52, 211, 153, 0.10);
-  border-color: rgba(52, 211, 153, 0.35);
-  color: #6ee7b7;
-}
-
-.ast-label-Format {
-  background-color: rgba(251, 191, 36, 0.12);
-  border-color: rgba(251, 191, 36, 0.38);
-  color: #fde68a;
-}
-
-.ast-label-Ref {
-  background-color: rgba(148, 163, 184, 0.10);
-  border-color: rgba(148, 163, 184, 0.3);
-  color: #94a3b8;
-}
-
-.ast-label-default {
-  background-color: rgba(99, 102, 241, 0.10);
-  border-color: rgba(99, 102, 241, 0.3);
-  color: #a5b4fc;
-}
-
-/* Light mode overrides for node colours */
-[data-theme="light"] .ast-label-Program {
-  background-color: rgba(79, 70, 229, 0.12);
-  border-color: rgba(79, 70, 229, 0.4);
-  color: #3730a3;
-}
-
-[data-theme="light"] .ast-label-VarDecl {
-  background-color: rgba(37, 99, 235, 0.1);
-  border-color: rgba(37, 99, 235, 0.4);
-  color: #1e40af;
-}
-
-[data-theme="light"] .ast-label-Assign,
-[data-theme="light"] .ast-label-PostfixStmt,
-[data-theme="light"] .ast-label-PrefixStmt {
-  background-color: rgba(220, 38, 38, 0.08);
-  border-color: rgba(220, 38, 38, 0.35);
-  color: #991b1b;
-}
-
-[data-theme="light"] .ast-label-If {
-  background-color: rgba(124, 58, 237, 0.1);
-  border-color: rgba(124, 58, 237, 0.35);
-  color: #5b21b6;
-}
-
-[data-theme="light"] .ast-label-While {
-  background-color: rgba(5, 150, 105, 0.1);
-  border-color: rgba(5, 150, 105, 0.35);
-  color: #065f46;
-}
-
-[data-theme="light"] .ast-label-Printf,
-[data-theme="light"] .ast-label-Scanf {
-  background-color: rgba(194, 65, 12, 0.08);
-  border-color: rgba(194, 65, 12, 0.3);
-  color: #9a3412;
-}
-
-[data-theme="light"] .ast-label-BinaryOp,
-[data-theme="light"] .ast-label-UnaryOp {
-  background-color: rgba(190, 24, 93, 0.08);
-  border-color: rgba(190, 24, 93, 0.3);
-  color: #9d174d;
-}
-
-[data-theme="light"] .ast-label-Number {
-  background-color: rgba(5, 150, 105, 0.08);
-  border-color: rgba(5, 150, 105, 0.3);
-  color: #065f46;
-}
-
-[data-theme="light"] .ast-label-Identifier {
-  background-color: rgba(100, 116, 139, 0.08);
-  border-color: rgba(100, 116, 139, 0.28);
-  color: #334155;
-}
-
-[data-theme="light"] .ast-label-String {
-  background-color: rgba(194, 65, 12, 0.08);
-  border-color: rgba(194, 65, 12, 0.3);
-  color: #9a3412;
-}
-
-[data-theme="light"] .ast-label-default {
-  background-color: rgba(79, 70, 229, 0.06);
-  border-color: rgba(79, 70, 229, 0.22);
-  color: #4338ca;
-}
-
-/* ─── Children connector colours per theme ──────────────────────── */
-[data-theme="light"] .ast-node-children {
-  border-color: rgba(79, 70, 229, 0.2);
-}
-
-[data-theme="light"] .ast-node-children>.ast-node::before {
-  background: rgba(79, 70, 229, 0.2);
-}
-
-/* Force ALL node label text to near-black in light mode */
-[data-theme="light"] .ast-node-label,
-[data-theme="light"] .ast-node-label .ast-label-text,
-[data-theme="light"] .ast-node-label .ast-toggle,
-[data-theme="light"] .ast-node-label .ast-leaf-dot,
-[data-theme="light"] .ast-node-label .ast-line-tag,
-[data-theme="light"] .ast-node-label .ast-type-tag {
-  color: #111827;
+.tree-ctrl-btn:active {
+  transform: scale(0.95);
 }
 
 /* ─── Animations ─────────────────────────────────────────────────── */

@@ -311,6 +311,11 @@
               <span class="ast-badge node-BinaryOp">BinaryOp</span>
               <span class="ast-badge node-expr">Leaf</span>
             </div>
+            <div class="tree-controls">
+              <button id="zoom-in-btn" class="tree-ctrl-btn" title="Zoom In">+</button>
+              <button id="zoom-out-btn" class="tree-ctrl-btn" title="Zoom Out">−</button>
+              <button id="zoom-fit-btn" class="tree-ctrl-btn" title="Fit to View">⟲</button>
+            </div>
             <div id="ast-tree" class="ast-tree"></div>
           </div>
 
@@ -330,6 +335,7 @@
     </div><!-- /grid -->
   </main>
 
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="app.js"></script>
 
   <script>

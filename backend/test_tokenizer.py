@@ -1,6 +1,4 @@
-"""
-Test script for the tokenizer
-"""
+# Test script for the tokenizer
 
 from lexer.tokenizer import Tokenizer
 

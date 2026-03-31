@@ -1,24 +1,4 @@
-"""
-Recursive Descent Parser for C (Subset) — Phase 2
-
-Supported grammar:
-  program        → statement*
-  statement      → var_decl | assign | if_stmt | while_stmt
-                 | printf_stmt | scanf_stmt | block | return_stmt
-  var_decl       → TYPE IDENT ('=' expr)? ';'
-  assign         → IDENT '=' expr ';'
-  if_stmt        → 'if' '(' expr ')' block ('else' block)?
-  while_stmt     → 'while' '(' expr ')' block
-  printf_stmt    → 'printf' '(' STRING (',' expr)* ')' ';'
-  scanf_stmt     → 'scanf'  '(' STRING (',' '&' IDENT)* ')' ';'
-  block          → '{' statement* '}'
-  expr           → comparison
-  comparison     → additive (('=='|'!='|'<'|'>'|'<='|'>=') additive)?
-  additive       → term (('+' | '-') term)*
-  term           → factor (('*' | '/') factor)*
-  factor         → ('++'|'--') IDENT | NUMBER | STRING | IDENT
-                 | '(' expr ')' | '-' factor
-"""
+# Recursive Descent Parser for C (Subset) — Phase 2
 
 from .ast_nodes import (
     ProgramNode, VarDeclNode, AssignNode, IfNode, WhileNode,
@@ -27,7 +7,6 @@ from .ast_nodes import (
     NumberNode, IdentNode, StringNode,
 )
 
-# Token type constants (mirrors lexer.token_types)
 KEYWORD    = "KEYWORD"
 IDENTIFIER = "IDENTIFIER"
 NUMBER     = "NUMBER"
@@ -35,13 +14,9 @@ OPERATOR   = "OPERATOR"
 SEPARATOR  = "SEPARATOR"
 STRING     = "STRING"
 
-# Types we can declare variables with
 VAR_TYPES = {'int', 'float', 'char', 'double', 'long'}
-
-# Comparison operators
 CMP_OPS = {'==', '!=', '<', '>', '<=', '>='}
 
-# Human-friendly names for token types
 FRIENDLY = {
     IDENTIFIER: "variable name",
     KEYWORD:    "keyword",
@@ -53,7 +28,7 @@ FRIENDLY = {
 
 
 class ParseError(Exception):
-    """Raised when the parser encounters a syntax error — carries structured info."""
+    # Raised when the parser encounters a syntax error — carries structured info
 
     def __init__(self, message, line=None, expected=None, got=None):
         super().__init__(message)
@@ -71,31 +46,16 @@ class ParseError(Exception):
 
 
 class CParser:
-    """
-    Recursive descent parser.
-
-    Usage:
-        parser = CParser(token_list)
-        result = parser.parse()
-        # result is {
-        #   "ast":   {...},          # always present (may be partial on error)
-        #   "error": {...} | None,   # None on full success
-        #   "trace": [...]           # parser step log
-        # }
-    """
+    # Recursive descent parser — accepts token list, produces AST + error + trace
 
     def __init__(self, tokens):
         self._tokens      = tokens
         self._pos         = 0
         self._trace       = []
-        self._parse_error = None  # stores first ParseError encountered
-
-    # ── Trace helper ────────────────────────────────────────────────
+        self._parse_error = None
 
     def _log(self, msg):
         self._trace.append(msg)
-
-    # ── Internal helpers ────────────────────────────────────────────
 
     def _peek(self, offset=0):
         idx = self._pos + offset
@@ -117,10 +77,7 @@ class CParser:
         return t['line'] if t else None
 
     def _expect(self, tok_type, value=None):
-        """
-        Consume the current token if it matches; raise a human-friendly
-        ParseError otherwise.
-        """
+        # Consume the current token if it matches; raise ParseError otherwise
         tok = self._current()
 
         if tok is None:
@@ -152,7 +109,7 @@ class CParser:
         return self._advance()
 
     def _match(self, tok_type, value=None):
-        """Return True and advance if current token matches, else False."""
+        # Return True and advance if current token matches, else False
         tok = self._current()
         if tok is None:
             return False
@@ -163,18 +120,8 @@ class CParser:
         self._advance()
         return True
 
-    # ── Public entry point ──────────────────────────────────────────
-
     def parse(self):
-        """
-        Parse the token stream.
-
-        Returns:
-            dict with keys:
-              ast   – serialised AST dict (partial if error occurred)
-              error – None on success, or {message, line, expected, got}
-              trace – list of parser step strings
-        """
+        # Parse the token stream, returns dict with ast, error, trace
         self._trace       = []
         self._parse_error = None
 
@@ -183,7 +130,6 @@ class CParser:
         try:
             program = self._parse_program()
         except Exception as e:
-            # Catastrophic error — shouldn't normally happen
             return {
                 "ast":   None,
                 "error": {"message": f"Internal error: {e}", "line": None,
@@ -205,8 +151,6 @@ class CParser:
             "trace": self._trace,
         }
 
-    # ── Grammar rules ────────────────────────────────────────────────
-
     def _parse_program(self):
         self._log("→ Program")
         stmts = []
@@ -217,9 +161,8 @@ class CParser:
                     stmts.append(stmt)
             except ParseError as e:
                 self._parse_error = e
-                # Append a visual error sentinel to the partial tree
                 stmts.append(_ErrorSentinel(str(e), e.line))
-                break   # stop — don't attempt to recover further
+                break
         return ProgramNode(stmts)
 
     def _parse_statement(self):
@@ -227,15 +170,12 @@ class CParser:
         if tok is None:
             return None
 
-        # Block
         if tok['type'] == SEPARATOR and tok['value'] == '{':
             return self._parse_block_as_node()
 
-        # Variable declaration
         if tok['type'] == KEYWORD and tok['value'] in VAR_TYPES:
             return self._parse_var_decl()
 
-        # if / while / printf / scanf / return
         if tok['type'] == KEYWORD:
             if tok['value'] == 'if':
                 return self._parse_if()
@@ -248,11 +188,9 @@ class CParser:
             if tok['value'] == 'return':
                 return self._parse_return()
 
-        # Prefix ++ / --
         if tok['type'] == OPERATOR and tok['value'] in ('++', '--'):
             return self._parse_unary_stmt()
 
-        # Assignment / postfix
         if tok['type'] == IDENTIFIER:
             return self._parse_assign_or_postfix()
 
@@ -263,31 +201,27 @@ class CParser:
             got=tok['value'],
         )
 
-    # ── Variable declaration ─────────────────────────────────────────
-
     def _parse_var_decl(self):
-        type_tok = self._advance()           # consume type
+        type_tok = self._advance()
         var_type = type_tok['value']
         line     = type_tok['line']
 
         self._log(f"  → VarDecl: type `{var_type}` (line {line})")
 
-        name_tok = self._expect(IDENTIFIER)  # variable name
+        name_tok = self._expect(IDENTIFIER)
         name     = name_tok['value']
         self._log(f"    ✓ Identifier `{name}`")
 
         init_expr = None
         if self._current() and self._current()['type'] == OPERATOR \
                 and self._current()['value'] == '=':
-            self._advance()                  # consume '='
+            self._advance()
             self._log(f"    → Parsing initializer expression")
             init_expr = self._parse_expr()
 
         self._expect_semicolon()
         self._log(f"    ✓ VarDecl complete: {var_type} {name}")
         return VarDeclNode(var_type, name, init_expr, line)
-
-    # ── Assignment / postfix ──────────────────────────────────────────
 
     def _parse_assign_or_postfix(self):
         name_tok = self._advance()
@@ -329,12 +263,10 @@ class CParser:
         self._log(f"  → PrefixStmt: {op}{name_tok['value']}")
         return _PrefixStmtNode(op, name_tok['value'], line)
 
-    # ── If statement ─────────────────────────────────────────────────
-
     def _parse_if(self):
         line = self._current()['line']
         self._log(f"  → IfStatement (line {line})")
-        self._advance()                      # consume 'if'
+        self._advance()
         self._expect(SEPARATOR, '(')
         self._log("    → Parsing condition")
         condition = self._parse_expr()
@@ -352,12 +284,10 @@ class CParser:
         self._log("    ✓ IfStatement complete")
         return IfNode(condition, then_body, else_body, line)
 
-    # ── While statement ──────────────────────────────────────────────
-
     def _parse_while(self):
         line = self._current()['line']
         self._log(f"  → WhileStatement (line {line})")
-        self._advance()                      # consume 'while'
+        self._advance()
         self._expect(SEPARATOR, '(')
         self._log("    → Parsing condition")
         condition = self._parse_expr()
@@ -367,12 +297,10 @@ class CParser:
         self._log("    ✓ WhileStatement complete")
         return WhileNode(condition, body, line)
 
-    # ── printf / scanf ─────────────────────────────────────────────
-
     def _parse_printf(self):
         line = self._current()['line']
         self._log(f"  → Printf (line {line})")
-        self._advance()                      # consume 'printf'
+        self._advance()
         self._expect(SEPARATOR, '(')
 
         fmt_tok = self._expect(STRING)
@@ -392,7 +320,7 @@ class CParser:
     def _parse_scanf(self):
         line = self._current()['line']
         self._log(f"  → Scanf (line {line})")
-        self._advance()                      # consume 'scanf'
+        self._advance()
         self._expect(SEPARATOR, '(')
 
         fmt_tok = self._expect(STRING)
@@ -412,12 +340,10 @@ class CParser:
         self._log("    ✓ Scanf complete")
         return ScanfNode(fmt, vars_, line)
 
-    # ── return statement ────────────────────────────────────────────
-
     def _parse_return(self):
         line = self._current()['line']
         self._log(f"  → Return (line {line})")
-        self._advance()                      # consume 'return'
+        self._advance()
         expr = None
         if self._current() and self._current()['value'] != ';':
             expr = self._parse_expr()
@@ -425,10 +351,8 @@ class CParser:
         self._log("    ✓ Return complete")
         return _ReturnNode(expr, line)
 
-    # ── Block ────────────────────────────────────────────────────────
-
     def _parse_block(self):
-        """Parse { stmts } and return list of statement nodes"""
+        # Parse { stmts } and return list of statement nodes
         self._expect(SEPARATOR, '{')
         stmts = []
         while self._current() and self._current()['value'] != '}':
@@ -441,8 +365,6 @@ class CParser:
     def _parse_block_as_node(self):
         stmts = self._parse_block()
         return ProgramNode(stmts)
-
-    # ── Expressions ──────────────────────────────────────────────────
 
     def _parse_expr(self):
         return self._parse_comparison()
@@ -532,8 +454,6 @@ class CParser:
             line=tok['line'], expected="expression", got=tok['value'],
         )
 
-    # ── Utility ──────────────────────────────────────────────────────
-
     def _expect_semicolon(self):
         tok = self._current()
         if tok is None:
@@ -549,10 +469,8 @@ class CParser:
         self._advance()
 
 
-# ── Internal helper nodes ────────────────────────────────────────────
-
 class _ErrorSentinel:
-    """Displayed as an ❌ leaf in the partial AST when parsing stops."""
+    # Displayed as an error leaf in the partial AST when parsing stops
     def __init__(self, message, line=None):
         self.message = message
         self.line = line

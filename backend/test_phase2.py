@@ -1,6 +1,4 @@
-"""
-Phase 2 verification test — run from backend/ folder
-"""
+# Phase 2 verification test — run from backend/ folder
 import json
 import sys
 
@@ -11,7 +9,7 @@ from parser.parser import CParser
 
 t = Tokenizer()
 
-# ── Test 1: Full program ─────────────────────────────────────────────
+# Test 1: Full program
 code1 = '''int a = 10;
 int b = 20;
 if (a < b) {
@@ -41,7 +39,7 @@ if 'error' in r1:
 else:
     print(json.dumps(r1['ast'], indent=2))
 
-# ── Test 2: Syntax error ─────────────────────────────────────────────
+# Test 2: Syntax error
 print()
 print("=" * 60)
 print("TEST 2: Syntax error (missing semicolon)")
@@ -52,7 +50,7 @@ p2 = CParser(tokens2)
 r2 = p2.parse()
 print("Result:", r2)
 
-# ── Test 3: New tokens ──────────────────────────────────────────────
+# Test 3: New tokens
 print()
 print("=" * 60)
 print("TEST 3: New operators ++ -- != and string literal")

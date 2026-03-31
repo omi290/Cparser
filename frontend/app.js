@@ -1,15 +1,11 @@
-/**
- * C Parser Visualizer — Phase 2
- * Handles: sample buttons, analyze(), token table, AST tree,
- *          error line highlighting, parser trace, pipeline animation.
- */
+// C Parser Visualizer — Phase 2: sample buttons, analyze(), token table, AST tree, error highlighting, parser trace, pipeline animation
 
 "use strict";
 
-/* ─── Config ─────────────────────────────────────────────────────── */
+// Config
 const API_BASE = 'http://localhost:5000';
 
-/* ─── Sample code snippets ───────────────────────────────────────── */
+// Sample code snippets
 const SAMPLES = {
   valid: `int a = 10;
 int b = 20;
@@ -41,7 +37,7 @@ int b = ;
 int c = a + b;`,
 };
 
-/* ─── DOM refs ───────────────────────────────────────────────────── */
+// DOM refs
 const codeInput = document.getElementById('code-input');
 const analyzeBtn = document.getElementById('analyze-btn');
 const clearBtn = document.getElementById('clear-btn');
@@ -78,10 +74,10 @@ const pipLex = document.getElementById('pip-lex');
 const pipParse = document.getElementById('pip-parse');
 const pipAst = document.getElementById('pip-ast');
 
-/* ─── State ──────────────────────────────────────────────────────── */
+// State
 let currentTokens = [];
 
-/* ─── AST CSS class registry (colors live in style.css) ─────────── */
+// AST CSS class registry
 const TYPED_NODES = new Set([
   'Program', 'VarDecl', 'Assign', 'PostfixStmt', 'PrefixStmt',
   'If', 'While', 'Printf', 'Scanf', 'Return',
@@ -90,7 +86,7 @@ const TYPED_NODES = new Set([
   'SyntaxError',
 ]);
 
-/* ─── Token colours (for stream) ─────────────────────────────────── */
+// Token colours for stream
 const TOK_COLORS = {
   KEYWORD: 'var(--tok-keyword)',
   IDENTIFIER: 'var(--tok-identifier)',
@@ -102,7 +98,7 @@ const TOK_COLORS = {
   UNKNOWN: 'var(--tok-unknown)',
 };
 
-/* ─── Helpers ────────────────────────────────────────────────────── */
+// Helpers
 function setLoading(on) {
   analyzeBtn.disabled = on;
   analyzeBtn.classList.toggle('loading', on);
@@ -151,7 +147,7 @@ function clearAstPanel() {
   parseErrBox.innerHTML = '';
 }
 
-/* ─── Pipeline animation ─────────────────────────────────────────── */
+// Pipeline animation
 function resetPipeline() {
   [pipSource, pipLex, pipParse, pipAst].forEach(el => {
     el.classList.remove('pip-active', 'pip-done', 'pip-error');
@@ -166,7 +162,7 @@ function setPipelineStage(stage, status = 'active') {
   el.classList.add(`pip-${status}`);
 }
 
-/* ─── Error line highlighting ────────────────────────────────────── */
+// Error line highlighting
 function highlightErrorLine(lineNum) {
   if (!lineNum) {
     clearErrorHighlight();
@@ -174,13 +170,11 @@ function highlightErrorLine(lineNum) {
   }
   codeInput.classList.add('has-error');
 
-  // Scroll the textarea to that line
   const lines = codeInput.value.split('\n');
   const before = lines.slice(0, lineNum - 1).join('\n');
   const lineH = codeInput.scrollHeight / (lines.length || 1);
   codeInput.scrollTop = Math.max(0, (lineNum - 2) * lineH);
 
-  // Show indicator pill
   errLineText.textContent = `Syntax error at line ${lineNum}`;
   errLineIndicator.style.display = 'flex';
 }
@@ -190,7 +184,7 @@ function clearErrorHighlight() {
   errLineIndicator.style.display = 'none';
 }
 
-/* ─── Token table ────────────────────────────────────────────────── */
+// Token table
 function renderTable(tokens) {
   tokenTbody.innerHTML = tokens.map((tok, i) => `
     <tr>
@@ -202,7 +196,7 @@ function renderTable(tokens) {
   ).join('');
 }
 
-/* ─── Token stream ───────────────────────────────────────────────── */
+// Token stream
 function renderStream(tokens) {
   streamBox.innerHTML = tokens.map(tok => {
     const color = TOK_COLORS[tok.type] || 'var(--text-muted)';
@@ -210,7 +204,7 @@ function renderStream(tokens) {
   }).join(' ');
 }
 
-/* ─── Stats chips ────────────────────────────────────────────────── */
+// Stats chips
 function renderStats(tokens) {
   const counts = {};
   tokens.forEach(t => { counts[t.type] = (counts[t.type] || 0) + 1; });
@@ -234,7 +228,7 @@ function renderStats(tokens) {
   }).join('');
 }
 
-/* ─── Parse error display ────────────────────────────────────────── */
+// Parse error display
 function renderParseErrors(parseError) {
   if (!parseError) {
     parseErrBox.style.display = 'none';
@@ -258,7 +252,7 @@ function renderParseErrors(parseError) {
   parseErrBox.style.display = 'block';
 }
 
-/* ─── Parser trace ───────────────────────────────────────────────── */
+// Parser trace
 function renderTrace(traceSteps) {
   if (!traceSteps || traceSteps.length === 0) {
     traceContent.textContent = 'No trace available.';
@@ -267,9 +261,7 @@ function renderTrace(traceSteps) {
   traceContent.textContent = traceSteps.join('\n');
 }
 
-/* ─── AST Visual Tree (D3.js) ────────────────────────────────────── */
-
-/* Node colour palette per AST node type */
+// AST Visual Tree (D3.js) — Node colour palette per AST node type
 const NODE_FILL = {
   Program:    '#6366f1', VarDecl:    '#3b82f6', Assign:     '#ef4444',
   If:         '#8b5cf6', While:      '#10b981', Condition:  '#06b6d4',
@@ -282,7 +274,7 @@ const NODE_FILL = {
 };
 const NODE_FILL_DEFAULT = '#6366f1';
 
-/* Short display label for each node type */
+// Short display label for each node type
 function getNodeShortLabel(data) {
   switch (data.type) {
     case 'Program':    return 'Program';
@@ -308,7 +300,7 @@ function getNodeShortLabel(data) {
   }
 }
 
-/* Measure approx text width for node sizing */
+// Measure approx text width for node sizing
 let _measureCanvas = null;
 function estimateTextWidth(text, fontSize = 13) {
   if (!_measureCanvas) {
@@ -318,32 +310,27 @@ function estimateTextWidth(text, fontSize = 13) {
   return _measureCanvas.measureText(text).width;
 }
 
-/* Shared zoom behaviour — stored so zoom controls can use it */
+// Shared zoom behaviour
 let _treeZoom = null;
 let _treeSvg  = null;
 
-/* ── Main tree render ─────────────────────────────────────────────── */
+// Main tree render
 function renderTree(astData, container) {
-  // Clear previous
   container.innerHTML = '';
   if (!astData) return;
 
-  /* Build D3 hierarchy */
   const root = d3.hierarchy(astData, d => d.children && d.children.length ? d.children : null);
 
-  /* Tree layout */
-  const nodeHGap = 28;   // horizontal gap between siblings
-  const nodeVGap = 80;   // vertical gap between levels
-  const nodeH    = 48;   // node height
+  const nodeHGap = 28;
+  const nodeVGap = 80;
+  const nodeH    = 48;
 
-  // Compute dynamic node width based on label
   root.descendants().forEach(d => {
     const label = getNodeShortLabel(d.data);
     d._label = label;
     d._w = Math.max(60, estimateTextWidth(label, 13) + 36);
   });
 
-  // Using nodeSize for proper spacing
   const treeLayout = d3.tree()
     .nodeSize([1, nodeVGap])
     .separation((a, b) => {
@@ -352,13 +339,11 @@ function renderTree(astData, container) {
 
   treeLayout(root);
 
-  // Scale x coords by a factor for real pixel space
   const xScale = 50;
   root.descendants().forEach(d => {
     d.x = d.x * xScale;
   });
 
-  /* Compute bounds */
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   root.descendants().forEach(d => {
     const hw = (d._w || 80) / 2;
@@ -372,8 +357,6 @@ function renderTree(astData, container) {
   const treeW = (maxX - minX) + treePad * 2;
   const treeH = (maxY - minY) + treePad * 2;
 
-  /* Create SVG — use explicit pixel size from the container
-     (CSS height:100% fails inside flex layouts) */
   const containerRect = container.getBoundingClientRect();
   const svgW = Math.max(containerRect.width, 300);
   const svgH = Math.max(containerRect.height, 400);
@@ -387,7 +370,6 @@ function renderTree(astData, container) {
   const g = svg.append('g')
     .attr('class', 'ast-zoom-group');
 
-  /* Zoom */
   const zoom = d3.zoom()
     .scaleExtent([0.15, 3])
     .on('zoom', event => {
@@ -398,7 +380,7 @@ function renderTree(astData, container) {
   _treeZoom = zoom;
   _treeSvg  = svg;
 
-  /* ── Draw links (curved) ─────────────────────────────────────────── */
+  // Draw links (curved)
   g.selectAll('.tree-link')
     .data(root.links())
     .join('path')
@@ -412,14 +394,13 @@ function renderTree(astData, container) {
       return `M${sx},${sy} C${sx},${midY} ${tx},${midY} ${tx},${ty}`;
     });
 
-  /* ── Draw nodes ──────────────────────────────────────────────────── */
+  // Draw nodes
   const nodes = g.selectAll('.tree-node')
     .data(root.descendants())
     .join('g')
     .attr('class', 'tree-node')
     .attr('transform', d => `translate(${d.x},${d.y})`);
 
-  // Rounded-rect background (pill shape)
   nodes.append('rect')
     .attr('class', 'tree-node-bg')
     .attr('x', d => -(d._w || 80) / 2)
@@ -435,29 +416,26 @@ function renderTree(astData, container) {
     })
     .attr('stroke-width', 2);
 
-  // Type label (small, top)
   nodes.append('text')
     .attr('class', 'tree-type-label')
     .attr('y', -5)
     .attr('text-anchor', 'middle')
     .text(d => d.data.type.toUpperCase());
 
-  // Value label (main, bottom)
   nodes.append('text')
     .attr('class', 'tree-value-label')
     .attr('y', 13)
     .attr('text-anchor', 'middle')
     .text(d => d._label);
 
-  /* ── Initial fit (delayed so layout is ready) ───────────────────── */
+  // Initial fit
   requestAnimationFrame(() => {
-    // Re-measure container in case flex sizing settled
     _resizeSvg();
     fitTree();
   });
 }
 
-/* Resize SVG to match current container size */
+// Resize SVG to match current container size
 function _resizeSvg() {
   if (!_treeSvg) return;
   const container = _treeSvg.node().parentElement;
@@ -468,14 +446,13 @@ function _resizeSvg() {
   _treeSvg.attr('width', w).attr('height', h);
 }
 
-/* Fit tree to container — all nodes visible, centered */
+// Fit tree to container
 function fitTree() {
   if (!_treeSvg || !_treeZoom) return;
   const svgEl = _treeSvg.node();
   const gEl   = svgEl.querySelector('.ast-zoom-group');
   if (!gEl) return;
 
-  // Re-sync SVG dimensions first
   _resizeSvg();
 
   const bbox = gEl.getBBox();
@@ -487,7 +464,7 @@ function fitTree() {
   const pad    = 30;
   const scaleX = (cW - pad * 2) / (bbox.width  || 1);
   const scaleY = (cH - pad * 2) / (bbox.height || 1);
-  const scale  = Math.min(scaleX, scaleY);  // no cap — fill the box
+  const scale  = Math.min(scaleX, scaleY);
   const tx     = cW / 2 - (bbox.x + bbox.width  / 2) * scale;
   const ty     = cH / 2 - (bbox.y + bbox.height / 2) * scale;
 
@@ -497,7 +474,7 @@ function fitTree() {
   );
 }
 
-/* ── Zoom controls ─────────────────────────────────────────────────── */
+// Zoom controls
 document.getElementById('zoom-in-btn')?.addEventListener('click', () => {
   if (_treeSvg && _treeZoom) _treeSvg.transition().duration(300).call(_treeZoom.scaleBy, 1.4);
 });
@@ -506,7 +483,7 @@ document.getElementById('zoom-out-btn')?.addEventListener('click', () => {
 });
 document.getElementById('zoom-fit-btn')?.addEventListener('click', fitTree);
 
-/* ─── Main analyze ───────────────────────────────────────────────── */
+// Main analyze function
 async function analyze() {
   const code = codeInput.value.trim();
   if (!code) { showError('Please enter some C code first.'); return; }
@@ -534,16 +511,14 @@ async function analyze() {
     const data = await res.json();
     const tokens = data.tokens || [];
     const ast = data.ast;
-    const parseError = data.parseError || null;  // structured {message, line, expected, got}
+    const parseError = data.parseError || null;
     const trace = data.trace || [];
 
     currentTokens = tokens;
 
-    // ── Pipeline progress ────────────────────────────────────────
     setPipelineStage('lex', tokens.length ? 'done' : 'error');
     setPipelineStage('parse', 'active');
 
-    // ── Render token panel ────────────────────────────────────────
     if (tokens.length) {
       renderTable(tokens);
       renderStream(tokens);
@@ -556,7 +531,6 @@ async function analyze() {
       clearTokenResults();
     }
 
-    // ── Render syntax panel ───────────────────────────────────────
     renderParseErrors(parseError);
     renderTrace(trace);
     astTree.innerHTML = '';
@@ -570,7 +544,6 @@ async function analyze() {
       astEmpty.style.display = 'flex';
     }
 
-    // ── Pipeline finish ───────────────────────────────────────────
     if (parseError) {
       setPipelineStage('parse', 'error');
       setPipelineStage('ast', 'error');
@@ -599,7 +572,7 @@ async function analyze() {
   }
 }
 
-/* ─── Sample code buttons ────────────────────────────────────────── */
+// Sample code buttons
 document.querySelectorAll('.sample-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const key = btn.dataset.sample;
@@ -612,7 +585,7 @@ document.querySelectorAll('.sample-btn').forEach(btn => {
   });
 });
 
-/* ─── Clear button ───────────────────────────────────────────────── */
+// Clear button
 clearBtn.addEventListener('click', () => {
   codeInput.value = '';
   codeInput.dispatchEvent(new Event('input'));
@@ -624,20 +597,20 @@ clearBtn.addEventListener('click', () => {
   traceContent.textContent = 'Run an analysis to see parser steps…';
 });
 
-/* ─── Analyze button / keyboard shortcut ─────────────────────────── */
+// Analyze button / keyboard shortcut
 analyzeBtn.addEventListener('click', analyze);
 codeInput.addEventListener('keydown', e => {
   if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); analyze(); }
 });
 
-/* ─── Editor char / line counter ─────────────────────────────────── */
+// Editor char / line counter
 codeInput.addEventListener('input', () => {
   const v = codeInput.value;
   charCount.textContent = `${v.length} chars`;
   lineCount.textContent = `${v.split('\n').length} lines`;
 });
 
-/* ─── Tab switching ──────────────────────────────────────────────── */
+// Tab switching
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => {
@@ -651,17 +624,15 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     const panel = document.getElementById(`panel-${btn.dataset.tab}`);
     if (panel) panel.classList.add('active');
 
-    // Copy button only on tokens tab
     copyBtn.style.display = btn.dataset.tab === 'tokens' ? 'inline-flex' : 'none';
 
-    // Re-fit tree when switching to syntax tab
     if (btn.dataset.tab === 'syntax') {
       setTimeout(fitTree, 80);
     }
   });
 });
 
-/* ─── Copy button ────────────────────────────────────────────────── */
+// Copy button
 copyBtn.addEventListener('click', () => {
   if (!currentTokens.length) return;
   const text = currentTokens.map(t => `${t.type.padEnd(12)} ${t.value}`).join('\n');
@@ -675,6 +646,5 @@ copyBtn.addEventListener('click', () => {
   });
 });
 
-/* ─── Init ───────────────────────────────────────────────────────── */
-// Update counters for initial empty state
+// Init — update counters for initial empty state
 codeInput.dispatchEvent(new Event('input'));

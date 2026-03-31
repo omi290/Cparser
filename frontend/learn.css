@@ -1,8 +1,6 @@
-/* ═══════════════════════════════════════════════════════════════════
-   LEARN PAGE — Compiler Design Phases
-   ═══════════════════════════════════════════════════════════════════ */
+/* Learn page — Compiler Design Phases */
 
-/* ─── Hero ───────────────────────────────────────────────────────── */
+/* Hero */
 .learn-hero {
   padding: 4rem 1.5rem 3rem;
   text-align: center;
@@ -60,7 +58,7 @@
   line-height: 1.7;
 }
 
-/* ─── Hero Pipeline ──────────────────────────────────────────────── */
+/* Hero pipeline */
 .learn-hero-pipeline {
   display: flex;
   align-items: center;
@@ -93,14 +91,14 @@
   user-select: none;
 }
 
-/* ─── Main Container ─────────────────────────────────────────────── */
+/* Main container */
 .learn-main {
   max-width: 900px;
   margin: 0 auto;
   padding: 2.5rem 1.5rem 3rem;
 }
 
-/* ─── Phase Card ─────────────────────────────────────────────────── */
+/* Phase card */
 .phase-card {
   background: var(--bg-card);
   border: 1px solid var(--border-card);
@@ -126,7 +124,7 @@
   box-shadow: 0 0 40px rgba(99, 102, 241, 0.12);
 }
 
-/* ─── Phase Header ───────────────────────────────────────────────── */
+/* Phase header */
 .phase-header {
   display: flex;
   align-items: center;
@@ -170,7 +168,7 @@
   margin-top: 0.2rem;
 }
 
-/* ─── Phase Body ─────────────────────────────────────────────────── */
+/* Phase body */
 .phase-body {
   padding: 1.5rem 1.75rem 1.75rem;
 }
@@ -182,7 +180,7 @@
   margin-bottom: 1.25rem;
 }
 
-/* ─── Phase Diagram / Example ────────────────────────────────────── */
+/* Phase diagram / example */
 .phase-diagram {
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
@@ -230,7 +228,7 @@
   color: var(--tok-separator);
 }
 
-/* ─── Subtopics Section ──────────────────────────────────────────── */
+/* Subtopics section */
 .subtopics {
   margin-bottom: 1.5rem;
 }
@@ -289,7 +287,7 @@
   color: var(--accent-3);
 }
 
-/* ─── Learn More Buttons ─────────────────────────────────────────── */
+/* Learn more buttons */
 .phase-links {
   display: flex;
   flex-wrap: wrap;
@@ -332,7 +330,7 @@
   box-shadow: 0 3px 12px rgba(99, 102, 241, 0.08);
 }
 
-/* ─── Resources Section ──────────────────────────────────────────── */
+/* Resources section */
 .resources-section {
   margin-top: 1rem;
   padding: 2rem 0 0;
@@ -393,7 +391,7 @@
   line-height: 1.6;
 }
 
-/* ─── Footer ─────────────────────────────────────────────────────── */
+/* Footer */
 .learn-footer {
   text-align: center;
   padding: 2rem 1.5rem;
@@ -412,7 +410,7 @@
   text-decoration: underline;
 }
 
-/* ─── Responsive ─────────────────────────────────────────────────── */
+/* Responsive */
 @media (max-width: 640px) {
   .learn-hero {
     padding: 2.5rem 1rem 2rem;

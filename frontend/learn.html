@@ -12,7 +12,7 @@
 
 <body>
 
-  <!-- ═══ NAVBAR ═══════════════════════════════════════════════════ -->
+  <!-- NAVBAR -->
   <nav class="navbar">
     <div class="nav-brand">
       <a href="index.html" class="nav-logo" title="Back to Parser">C</a>
@@ -37,7 +37,7 @@
     </div>
   </nav>
 
-  <!-- ═══ HERO ═══════════════════════════════════════════════════ -->
+  <!-- HERO -->
   <header class="learn-hero">
     <div class="learn-hero-inner">
       <span class="learn-hero-badge">📚 Educational Resource</span>
@@ -63,10 +63,10 @@
     </div>
   </header>
 
-  <!-- ═══ PHASE CARDS ═══════════════════════════════════════════ -->
+  <!-- PHASE CARDS -->
   <main class="learn-main">
 
-    <!-- ── Phase 1: Lexical Analysis ──────────────────────────── -->
+    <!-- Phase 1: Lexical Analysis -->
     <section class="phase-card" id="phase-1">
       <div class="phase-header">
         <div class="phase-num" style="--phase-color:#60a5fa">1</div>
@@ -127,7 +127,7 @@
       </div>
     </section>
 
-    <!-- ── Phase 2: Syntax Analysis ──────────────────────────── -->
+    <!-- Phase 2: Syntax Analysis -->
     <section class="phase-card" id="phase-2">
       <div class="phase-header">
         <div class="phase-num" style="--phase-color:#a78bfa">2</div>
@@ -188,7 +188,7 @@
       </div>
     </section>
 
-    <!-- ── Phase 3: Semantic Analysis ─────────────────────────── -->
+    <!-- Phase 3: Semantic Analysis -->
     <section class="phase-card" id="phase-3">
       <div class="phase-header">
         <div class="phase-num" style="--phase-color:#fb923c">3</div>
@@ -249,7 +249,7 @@
       </div>
     </section>
 
-    <!-- ── Phase 4: Intermediate Code Generation ──────────────── -->
+    <!-- Phase 4: Intermediate Code Generation -->
     <section class="phase-card" id="phase-4">
       <div class="phase-header">
         <div class="phase-num" style="--phase-color:#34d399">4</div>
@@ -311,7 +311,7 @@
       </div>
     </section>
 
-    <!-- ── Phase 5: Code Optimization ─────────────────────────── -->
+    <!-- Phase 5: Code Optimization -->
     <section class="phase-card" id="phase-5">
       <div class="phase-header">
         <div class="phase-num" style="--phase-color:#fbbf24">5</div>
@@ -373,7 +373,7 @@
       </div>
     </section>
 
-    <!-- ── Phase 6: Code Generation ───────────────────────────── -->
+    <!-- Phase 6: Code Generation -->
     <section class="phase-card" id="phase-6">
       <div class="phase-header">
         <div class="phase-num" style="--phase-color:#f87171">6</div>
@@ -435,7 +435,7 @@
       </div>
     </section>
 
-    <!-- ── Phase 7: Symbol Table Management ────────────────────── -->
+    <!-- Phase 7: Symbol Table Management -->
     <section class="phase-card" id="phase-7">
       <div class="phase-header">
         <div class="phase-num" style="--phase-color:#22d3ee">7</div>
@@ -496,7 +496,7 @@
       </div>
     </section>
 
-    <!-- ═══ RECOMMENDED RESOURCES ═════════════════════════════ -->
+    <!-- Recommended Resources -->
     <section class="resources-section">
       <h2>📚 Recommended Textbooks & Resources</h2>
       <div class="resource-grid">
@@ -525,13 +525,13 @@
 
   </main>
 
-  <!-- ═══ FOOTER ═══════════════════════════════════════════════ -->
+  <!-- FOOTER -->
   <footer class="learn-footer">
     <p>C Parser Visualizer — Educational Compiler Tool &nbsp;·&nbsp; <a href="index.html">← Back to Parser</a></p>
   </footer>
 
   <script>
-    /* Theme toggle */
+    // Theme toggle
     const _html = document.documentElement;
     const _toggle = document.getElementById('theme-toggle');
     const _themeIcon = document.getElementById('theme-icon');
@@ -549,7 +549,7 @@
       applyTheme(_html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
     });
 
-    /* Scroll-reveal for phase cards */
+    // Scroll-reveal for phase cards
     const observer = new IntersectionObserver(entries => {
       entries.forEach(e => {
         if (e.isIntersecting) {

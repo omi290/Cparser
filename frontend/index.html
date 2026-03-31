@@ -12,7 +12,7 @@
 
 <body>
 
-  <!-- ═══ NAVBAR ═══════════════════════════════════════════════════ -->
+  <!-- NAVBAR -->
   <nav class="navbar">
     <div class="nav-brand">
       <div class="nav-logo">C</div>
@@ -40,7 +40,7 @@
     </div>
   </nav>
 
-  <!-- ═══ MAIN ══════════════════════════════════════════════════════ -->
+  <!-- MAIN -->
   <main class="main">
 
     <!-- Hero -->
@@ -75,7 +75,7 @@
     <!-- Two-column grid -->
     <div class="grid">
 
-      <!-- ─── LEFT: Code Editor ─────────────────────────────────── -->
+      <!-- LEFT: Code Editor -->
       <div class="card">
         <div class="card-header">
           <div class="card-title">
@@ -95,7 +95,6 @@
           </div>
           <textarea id="code-input" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"
             placeholder="// Enter C code here or click a sample below…"></textarea>
-          <!-- Error line indicator -->
           <div id="error-line-indicator" class="error-line-indicator" style="display:none;">
             <span class="err-line-icon">❌</span>
             <span id="err-line-text"></span>
@@ -154,7 +153,7 @@
         </div>
       </div>
 
-      <!-- ─── RIGHT: Visualization Panel ───────────────────────── -->
+      <!-- RIGHT: Visualization Panel -->
       <div class="card viz-card">
         <div class="card-header">
           <div class="card-title">
@@ -180,7 +179,7 @@
           </button>
         </div>
 
-        <!-- ── Panel: Lexical Analysis ── -->
+        <!-- Panel: Lexical Analysis -->
         <div id="panel-tokens" class="tab-panel active">
 
           <div id="stats-row" class="stats-row" style="display:none;"></div>
@@ -231,10 +230,9 @@
           </div>
         </div>
 
-        <!-- ── Panel: Syntax Analyzer ── -->
+        <!-- Panel: Syntax Analyzer -->
         <div id="panel-syntax" class="tab-panel">
 
-          <!-- Structured error box -->
           <div id="parse-error-box" class="parse-error-box" style="display:none;"></div>
 
           <!-- Collapsible Grammar panel -->
@@ -336,16 +334,16 @@
             </div>
           </div>
 
-        </div><!-- /panel-syntax -->
-      </div><!-- /right card -->
-    </div><!-- /grid -->
+        </div>
+      </div>
+    </div>
   </main>
 
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="app.js"></script>
 
   <script>
-    /* ── Theme toggle ── */
+    // Theme toggle
     const _html = document.documentElement;
     const _toggle = document.getElementById('theme-toggle');
     const _themeIcon = document.getElementById('theme-icon');
@@ -363,7 +361,7 @@
       applyTheme(_html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
     });
 
-    /* ── Grammar panel toggle ── */
+    // Grammar panel toggle
     const grammarToggle = document.getElementById('grammar-toggle');
     const grammarBody = document.getElementById('grammar-body');
     const grammarArrow = grammarToggle.querySelector('.grammar-arrow');
@@ -375,7 +373,7 @@
       grammarToggle.setAttribute('aria-expanded', open);
     });
 
-    /* ── Trace panel toggle ── */
+    // Trace panel toggle
     const traceToggle = document.getElementById('trace-toggle');
     const traceBody = document.getElementById('trace-body');
     const traceArrow = traceToggle.querySelector('.trace-arrow');

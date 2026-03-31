@@ -1,28 +1,20 @@
-"""
-AST Node Classes for C Parser — Phase 2
-
-Each node serializes to a dict via .to_dict() for JSON responses.
-"""
+# AST Node Classes for C Parser — Phase 2, each node serializes to dict via .to_dict()
 
 
 class ASTNode:
-    """Base class for all AST nodes"""
+    # Base class for all AST nodes
     node_type = "Node"
 
     def to_dict(self):
         raise NotImplementedError
 
 
-# ─────────────────────────────────────────────────────────────────────
-# Root
-# ─────────────────────────────────────────────────────────────────────
-
 class ProgramNode(ASTNode):
-    """Root of the program — holds a list of statements"""
+    # Root of the program — holds a list of statements
     node_type = "Program"
 
     def __init__(self, statements):
-        self.statements = statements  # list[ASTNode]
+        self.statements = statements
 
     def to_dict(self):
         return {
@@ -32,18 +24,14 @@ class ProgramNode(ASTNode):
         }
 
 
-# ─────────────────────────────────────────────────────────────────────
-# Statements
-# ─────────────────────────────────────────────────────────────────────
-
 class VarDeclNode(ASTNode):
-    """Variable declaration: int a = expr;   or   int a;"""
+    # Variable declaration: int a = expr; or int a;
     node_type = "VarDecl"
 
     def __init__(self, var_type, name, init_expr=None, line=0):
-        self.var_type  = var_type    # 'int' | 'float' | 'char'
-        self.name      = name        # identifier string
-        self.init_expr = init_expr   # ASTNode | None
+        self.var_type  = var_type
+        self.name      = name
+        self.init_expr = init_expr
         self.line      = line
 
     def to_dict(self):
@@ -65,12 +53,12 @@ class VarDeclNode(ASTNode):
 
 
 class AssignNode(ASTNode):
-    """Assignment: a = expr;"""
+    # Assignment: a = expr;
     node_type = "Assign"
 
     def __init__(self, name, expr, line=0):
-        self.name = name   # identifier string
-        self.expr = expr   # ASTNode
+        self.name = name
+        self.expr = expr
         self.line = line
 
     def to_dict(self):
@@ -83,13 +71,13 @@ class AssignNode(ASTNode):
 
 
 class IfNode(ASTNode):
-    """if (cond) { body } [else { else_body }]"""
+    # if (cond) { body } [else { else_body }]
     node_type = "If"
 
     def __init__(self, condition, then_body, else_body=None, line=0):
-        self.condition = condition   # ASTNode
-        self.then_body = then_body   # list[ASTNode]
-        self.else_body = else_body   # list[ASTNode] | None
+        self.condition = condition
+        self.then_body = then_body
+        self.else_body = else_body
         self.line      = line
 
     def to_dict(self):
@@ -120,12 +108,12 @@ class IfNode(ASTNode):
 
 
 class WhileNode(ASTNode):
-    """while (cond) { body }"""
+    # while (cond) { body }
     node_type = "While"
 
     def __init__(self, condition, body, line=0):
-        self.condition = condition   # ASTNode
-        self.body      = body        # list[ASTNode]
+        self.condition = condition
+        self.body      = body
         self.line      = line
 
     def to_dict(self):
@@ -149,12 +137,12 @@ class WhileNode(ASTNode):
 
 
 class PrintfNode(ASTNode):
-    """printf("fmt", args...);"""
+    # printf("fmt", args...);
     node_type = "Printf"
 
     def __init__(self, fmt_string, args, line=0):
-        self.fmt_string = fmt_string  # string value
-        self.args       = args        # list[ASTNode]
+        self.fmt_string = fmt_string
+        self.args       = args
         self.line       = line
 
     def to_dict(self):
@@ -169,12 +157,12 @@ class PrintfNode(ASTNode):
 
 
 class ScanfNode(ASTNode):
-    """scanf("fmt", &var, ...);"""
+    # scanf("fmt", &var, ...);
     node_type = "Scanf"
 
     def __init__(self, fmt_string, vars_, line=0):
-        self.fmt_string = fmt_string   # string value
-        self.vars_      = vars_        # list of identifier strings
+        self.fmt_string = fmt_string
+        self.vars_      = vars_
         self.line       = line
 
     def to_dict(self):
@@ -188,12 +176,8 @@ class ScanfNode(ASTNode):
         }
 
 
-# ─────────────────────────────────────────────────────────────────────
-# Expressions
-# ─────────────────────────────────────────────────────────────────────
-
 class BinaryOpNode(ASTNode):
-    """Binary operation: left op right"""
+    # Binary operation: left op right
     node_type = "BinaryOp"
 
     def __init__(self, op, left, right, line=0):
@@ -213,7 +197,7 @@ class BinaryOpNode(ASTNode):
 
 
 class UnaryOpNode(ASTNode):
-    """Unary operation: op operand"""
+    # Unary operation: op operand
     node_type = "UnaryOp"
 
     def __init__(self, op, operand, line=0):
@@ -232,7 +216,7 @@ class UnaryOpNode(ASTNode):
 
 
 class NumberNode(ASTNode):
-    """Numeric literal"""
+    # Numeric literal
     node_type = "Number"
 
     def __init__(self, value, line=0):
@@ -250,7 +234,7 @@ class NumberNode(ASTNode):
 
 
 class IdentNode(ASTNode):
-    """Identifier reference"""
+    # Identifier reference
     node_type = "Identifier"
 
     def __init__(self, name, line=0):
@@ -268,7 +252,7 @@ class IdentNode(ASTNode):
 
 
 class StringNode(ASTNode):
-    """String literal"""
+    # String literal
     node_type = "String"
 
     def __init__(self, value, line=0):

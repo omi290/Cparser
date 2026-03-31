@@ -199,6 +199,35 @@ body[data-theme="light"] {
   gap: 0.75rem;
 }
 
+.nav-learn-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 2px 10px var(--accent-glow);
+  transition: transform 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+
+.nav-learn-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+.nav-learn-btn:active {
+  transform: translateY(0);
+}
+
+.nav-learn-btn svg {
+  flex-shrink: 0;
+}
+
 .nav-badges {
   display: flex;
   align-items: center;

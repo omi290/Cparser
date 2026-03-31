@@ -1,4 +1,4 @@
-# Recursive Descent Parser for C (Subset) — Phase 2
+# Recursive Descent Parser for C (Subset) - top down parser 
 
 from .ast_nodes import (
     ProgramNode, VarDeclNode, AssignNode, IfNode, WhileNode,

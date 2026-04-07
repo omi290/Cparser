@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>C Parser Visualizer — Phase 2: Syntax Analysis</title>
+  <title>C Parser Visualizer — Phase 3: Semantic Analysis</title>
   <meta name="description"
-    content="Interactive C language parser — lexical tokenizer and syntax tree visualizer with pipeline visualization." />
+    content="Interactive C language parser — lexical tokenizer, syntax tree visualizer, and semantic analyzer with symbol table." />
   <link rel="stylesheet" href="style.css" />
 </head>
 
@@ -18,7 +18,7 @@
       <div class="nav-logo">C</div>
       <div>
         <div class="nav-title">C Parser Visualizer</div>
-        <div class="nav-subtitle">Educational Compiler Tool — Phase 2</div>
+        <div class="nav-subtitle">Educational Compiler Tool — Phase 3</div>
       </div>
     </div>
 
@@ -45,8 +45,8 @@
 
     <!-- Hero -->
     <div class="hero">
-      <h2>Tokenize, Parse &amp; Visualize C Code</h2>
-      <p>Enter C code, click <strong>Analyze</strong> — see the full compilation pipeline from source to AST.</p>
+      <h2>Tokenize, Parse, Analyze &amp; Visualize C Code</h2>
+      <p>Enter C code, click <strong>Analyze</strong> — see the full compilation pipeline from source to semantic analysis.</p>
     </div>
 
     <!-- Pipeline banner -->
@@ -69,6 +69,11 @@
       <div class="pipeline-step" id="pip-ast">
         <span class="pip-icon">🌳</span>
         <span>AST</span>
+      </div>
+      <span class="pip-arrow">→</span>
+      <div class="pipeline-step" id="pip-semantic">
+        <span class="pip-icon">🧠</span>
+        <span>Semantic Analysis</span>
       </div>
     </div>
 
@@ -114,7 +119,8 @@
           <button class="sample-btn" data-sample="ifelse"> If-Else</button>
           <button class="sample-btn" data-sample="while"> While</button>
           <button class="sample-btn" data-sample="printf"> Printf</button>
-          <button class="sample-btn" data-sample="error"> Error</button>
+          <button class="sample-btn" data-sample="error"> Syntax Error</button>
+          <button class="sample-btn sample-btn-semantic" data-sample="semantic"> Semantic Error</button>
         </div>
 
         <!-- Action buttons -->
@@ -176,6 +182,9 @@
           </button>
           <button class="tab-btn" data-tab="syntax" role="tab" aria-selected="false">
             🌳 Syntax Analyzer
+          </button>
+          <button class="tab-btn" data-tab="semantic" role="tab" aria-selected="false">
+            📋 Symbol Table
           </button>
         </div>
 
@@ -335,6 +344,44 @@
           </div>
 
         </div>
+
+        <!-- Panel: Semantic Analysis -->
+        <div id="panel-semantic" class="tab-panel">
+
+          <!-- Semantic Errors -->
+          <div id="semantic-error-box" class="semantic-error-box" style="display:none;"></div>
+
+          <!-- Semantic success badge -->
+          <div id="semantic-success" class="semantic-success-box" style="display:none;">
+            <span class="sem-success-icon">✅</span>
+            <span id="semantic-success-msg">No semantic errors found</span>
+          </div>
+
+          <!-- Symbol Table -->
+          <div id="symtable-wrap" class="table-wrap symtable-wrap" style="display:none;">
+            <table class="token-table symtable">
+              <thead>
+                <tr>
+                  <th class="col-num">#</th>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Scope</th>
+                  <th class="col-line">Line</th>
+                </tr>
+              </thead>
+              <tbody id="symtable-tbody"></tbody>
+            </table>
+          </div>
+
+          <!-- Empty state -->
+          <div id="semantic-empty" class="empty-state">
+            <div class="empty-icon">🧠</div>
+            <p>No semantic analysis yet</p>
+            <small>Click "Analyze" to run semantic checks and build the symbol table</small>
+          </div>
+
+        </div>
+
       </div>
     </div>
   </main>

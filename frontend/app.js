@@ -1,4 +1,4 @@
-// C Parser Visualizer — Phase 2: sample buttons, analyze(), token table, AST tree, error highlighting, parser trace, pipeline animation
+// C Parser Visualizer — Phase 3: sample buttons, analyze(), token table, AST tree, semantic analysis, symbol table, error highlighting, parser trace, pipeline animation
 
 "use strict";
 
@@ -35,6 +35,15 @@ scanf("%d", &n);`,
   error: `int a = 10;
 int b = ;
 int c = a + b;`,
+
+  semantic: `int a = 10;
+int a = 20;
+b = 5;
+int x = 3.14;
+{
+    int y = 1;
+}
+y = 2;`,
 };
 
 // DOM refs
@@ -64,6 +73,14 @@ const astEmpty = document.getElementById('ast-empty');
 const parseErrBox = document.getElementById('parse-error-box');
 const traceContent = document.getElementById('trace-content');
 
+// Semantic panel
+const symtableWrap = document.getElementById('symtable-wrap');
+const symtableTbody = document.getElementById('symtable-tbody');
+const semanticErrorBox = document.getElementById('semantic-error-box');
+const semanticSuccess = document.getElementById('semantic-success');
+const semanticSuccessMsg = document.getElementById('semantic-success-msg');
+const semanticEmpty = document.getElementById('semantic-empty');
+
 // Error line indicator
 const errLineIndicator = document.getElementById('error-line-indicator');
 const errLineText = document.getElementById('err-line-text');
@@ -73,6 +90,7 @@ const pipSource = document.getElementById('pip-source');
 const pipLex = document.getElementById('pip-lex');
 const pipParse = document.getElementById('pip-parse');
 const pipAst = document.getElementById('pip-ast');
+const pipSemantic = document.getElementById('pip-semantic');
 
 // State
 let currentTokens = [];
@@ -96,6 +114,24 @@ const TOK_COLORS = {
   STRING: 'var(--tok-string)',
   COMMENT: 'var(--text-muted)',
   UNKNOWN: 'var(--tok-unknown)',
+};
+
+// Scope badge colors
+const SCOPE_COLORS = {
+  global: { bg: 'rgba(99,102,241,0.18)', color: '#a5b4fc', border: 'rgba(99,102,241,0.4)' },
+  block:  { bg: 'rgba(20,184,166,0.18)', color: '#5eead4', border: 'rgba(20,184,166,0.4)' },
+  if:     { bg: 'rgba(139,92,246,0.18)',  color: '#c4b5fd', border: 'rgba(139,92,246,0.4)' },
+  else:   { bg: 'rgba(249,115,22,0.18)',  color: '#fdba74', border: 'rgba(249,115,22,0.4)' },
+  while:  { bg: 'rgba(16,185,129,0.18)',  color: '#6ee7b7', border: 'rgba(16,185,129,0.4)' },
+};
+
+// Type badge colors
+const TYPE_COLORS = {
+  int:    { bg: 'rgba(96,165,250,0.18)',  color: '#93c5fd', border: 'rgba(96,165,250,0.4)' },
+  float:  { bg: 'rgba(52,211,153,0.18)',  color: '#6ee7b7', border: 'rgba(52,211,153,0.4)' },
+  char:   { bg: 'rgba(251,146,60,0.18)',  color: '#fdba74', border: 'rgba(251,146,60,0.4)' },
+  double: { bg: 'rgba(236,72,153,0.18)',  color: '#f9a8d4', border: 'rgba(236,72,153,0.4)' },
+  long:   { bg: 'rgba(167,139,250,0.18)', color: '#c4b5fd', border: 'rgba(167,139,250,0.4)' },
 };
 
 // Helpers
@@ -147,15 +183,24 @@ function clearAstPanel() {
   parseErrBox.innerHTML = '';
 }
 
+function clearSemanticPanel() {
+  symtableWrap.style.display = 'none';
+  symtableTbody.innerHTML = '';
+  semanticErrorBox.style.display = 'none';
+  semanticErrorBox.innerHTML = '';
+  semanticSuccess.style.display = 'none';
+  semanticEmpty.style.display = 'flex';
+}
+
 // Pipeline animation
 function resetPipeline() {
-  [pipSource, pipLex, pipParse, pipAst].forEach(el => {
+  [pipSource, pipLex, pipParse, pipAst, pipSemantic].forEach(el => {
     el.classList.remove('pip-active', 'pip-done', 'pip-error');
   });
 }
 
 function setPipelineStage(stage, status = 'active') {
-  const map = { source: pipSource, lex: pipLex, parse: pipParse, ast: pipAst };
+  const map = { source: pipSource, lex: pipLex, parse: pipParse, ast: pipAst, semantic: pipSemantic };
   const el = map[stage];
   if (!el) return;
   el.classList.remove('pip-active', 'pip-done', 'pip-error');
@@ -259,6 +304,57 @@ function renderTrace(traceSteps) {
     return;
   }
   traceContent.textContent = traceSteps.join('\n');
+}
+
+// Symbol Table renderer
+function renderSymbolTable(symbols) {
+  if (!symbols || symbols.length === 0) {
+    symtableWrap.style.display = 'none';
+    return;
+  }
+
+  symtableTbody.innerHTML = symbols.map((sym, i) => {
+    const sc = SCOPE_COLORS[sym.scope] || SCOPE_COLORS.block;
+    const tc = TYPE_COLORS[sym.type] || TYPE_COLORS.int;
+    return `
+    <tr>
+      <td class="col-num">${i + 1}</td>
+      <td class="sym-name">${escapeHtml(sym.name)}</td>
+      <td><span class="scope-badge" style="background:${tc.bg};color:${tc.color};border-color:${tc.border}">${escapeHtml(sym.type)}</span></td>
+      <td><span class="scope-badge" style="background:${sc.bg};color:${sc.color};border-color:${sc.border}">${escapeHtml(sym.scope)}</span></td>
+      <td class="col-line">${sym.line}</td>
+    </tr>`;
+  }).join('');
+
+  symtableWrap.style.display = 'block';
+}
+
+// Semantic Errors renderer
+function renderSemanticErrors(errors) {
+  if (!errors || errors.length === 0) {
+    semanticErrorBox.style.display = 'none';
+    semanticErrorBox.innerHTML = '';
+    return;
+  }
+
+  semanticErrorBox.innerHTML = `
+    <div class="sem-err-header">
+      <span class="sem-err-icon">🧠</span>
+      <strong>${errors.length} Semantic Error${errors.length !== 1 ? 's' : ''} Found</strong>
+    </div>
+    <div class="sem-err-list">
+      ${errors.map((err, i) => `
+        <div class="sem-err-item">
+          <span class="sem-err-num">${i + 1}</span>
+          <div class="sem-err-body">
+            <span class="sem-err-msg">${escapeHtml(err.message)}</span>
+            ${err.line ? `<span class="sem-err-line">Line ${err.line}</span>` : ''}
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+
+  semanticErrorBox.style.display = 'block';
 }
 
 // AST Visual Tree (D3.js) — Node colour palette per AST node type
@@ -497,7 +593,7 @@ async function analyze() {
   try {
     setPipelineStage('lex', 'active');
 
-    const res = await fetch(`${API_BASE}/parse`, {
+    const res = await fetch(`${API_BASE}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code }),
@@ -513,6 +609,8 @@ async function analyze() {
     const ast = data.ast;
     const parseError = data.parseError || null;
     const trace = data.trace || [];
+    const symbolTable = data.symbol_table || [];
+    const semanticErrors = data.semantic_errors || [];
 
     currentTokens = tokens;
 
@@ -547,14 +645,34 @@ async function analyze() {
     if (parseError) {
       setPipelineStage('parse', 'error');
       setPipelineStage('ast', 'error');
+      setPipelineStage('semantic', 'error');
       highlightErrorLine(parseError.line);
       showError(`Syntax Error${parseError.line ? ` at line ${parseError.line}` : ''}: ${parseError.message}`);
+      clearSemanticPanel();
     } else {
       setPipelineStage('parse', 'done');
       setPipelineStage('ast', 'done');
-      showSuccess(
-        `✓ ${tokens.length} token${tokens.length !== 1 ? 's' : ''} · AST built — ${ast?.children?.length || 0} top-level statement(s)`
-      );
+      setPipelineStage('semantic', 'active');
+
+      // Render semantic results
+      renderSymbolTable(symbolTable);
+      renderSemanticErrors(semanticErrors);
+      semanticEmpty.style.display = 'none';
+
+      if (semanticErrors.length > 0) {
+        setPipelineStage('semantic', 'error');
+        semanticSuccess.style.display = 'none';
+        showError(
+          `✓ ${tokens.length} token${tokens.length !== 1 ? 's' : ''} · AST built · ${semanticErrors.length} semantic error${semanticErrors.length !== 1 ? 's' : ''} found`
+        );
+      } else {
+        setPipelineStage('semantic', 'done');
+        semanticSuccess.style.display = 'flex';
+        semanticSuccessMsg.textContent = `No semantic errors — ${symbolTable.length} symbol${symbolTable.length !== 1 ? 's' : ''} declared`;
+        showSuccess(
+          `✓ ${tokens.length} token${tokens.length !== 1 ? 's' : ''} · AST built · ${symbolTable.length} symbol${symbolTable.length !== 1 ? 's' : ''} · No semantic errors`
+        );
+      }
     }
 
   } catch (err) {
@@ -567,6 +685,7 @@ async function analyze() {
     }
     clearTokenResults();
     clearAstPanel();
+    clearSemanticPanel();
   } finally {
     setLoading(false);
   }
@@ -591,6 +710,7 @@ clearBtn.addEventListener('click', () => {
   codeInput.dispatchEvent(new Event('input'));
   clearTokenResults();
   clearAstPanel();
+  clearSemanticPanel();
   hideBanners();
   clearErrorHighlight();
   resetPipeline();

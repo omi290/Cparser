@@ -10,7 +10,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
-        learn: resolve(__dirname, 'learn.html'),
+        visualizer: resolve(__dirname, 'visualizer.html'),
       }
     }
   }

@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>C Parser Visualizer — Phase 3: Semantic Analysis</title>
+  <title>C Parser Visualizer — Phase 4: Intermediate Code Generation</title>
   <meta name="description"
-    content="Interactive C language parser — lexical tokenizer, syntax tree visualizer, and semantic analyzer with symbol table." />
+    content="Interactive C language parser — lexical tokenizer, syntax tree, semantic analyzer, and three-address code generator." />
   <link rel="stylesheet" href="style.css" />
 </head>
 
@@ -18,7 +18,7 @@
       <div class="nav-logo">C</div>
       <div>
         <div class="nav-title">C Parser Visualizer</div>
-        <div class="nav-subtitle">Educational Compiler Tool — Phase 3</div>
+        <div class="nav-subtitle">Educational Compiler Tool — Phase 4</div>
       </div>
     </div>
 
@@ -45,8 +45,8 @@
 
     <!-- Hero -->
     <div class="hero">
-      <h2>Tokenize, Parse, Analyze &amp; Visualize C Code</h2>
-      <p>Enter C code, click <strong>Analyze</strong> — see the full compilation pipeline from source to semantic analysis.</p>
+      <h2>Tokenize, Parse, Analyze &amp; Generate IR</h2>
+      <p>Enter C code, click <strong>Analyze</strong> — see the full compilation pipeline from source to Three-Address Code.</p>
     </div>
 
     <!-- Pipeline banner -->
@@ -74,6 +74,11 @@
       <div class="pipeline-step" id="pip-semantic">
         <span class="pip-icon"></span>
         <span>Semantic Analysis</span>
+      </div>
+      <span class="pip-arrow">→</span>
+      <div class="pipeline-step" id="pip-icg">
+        <span class="pip-icon"></span>
+        <span>ICG (TAC)</span>
       </div>
     </div>
 
@@ -185,6 +190,9 @@
           </button>
           <button class="tab-btn" data-tab="semantic" role="tab" aria-selected="false">
             📋 Symbol Table
+          </button>
+          <button class="tab-btn" data-tab="icg" role="tab" aria-selected="false">
+            ⚡ ICG (TAC)
           </button>
         </div>
 
@@ -378,6 +386,63 @@
             <div class="empty-icon">🧠</div>
             <p>No semantic analysis yet</p>
             <small>Click "Analyze" to run semantic checks and build the symbol table</small>
+          </div>
+
+        </div>
+
+        <!-- Panel: ICG (Three-Address Code) -->
+        <div id="panel-icg" class="tab-panel">
+
+          <!-- TAC Code Display -->
+          <div id="tac-section" style="display:none;">
+            <div class="card-header" style="margin-bottom:0.5rem;">
+              <div class="card-title" style="font-size:0.875rem;">
+                <div class="card-title-icon" style="font-size:0.75rem;">📜</div>
+                Three-Address Code
+              </div>
+              <button id="copy-tac-btn" class="copy-btn" title="Copy TAC">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                </svg>
+                <span class="copy-text">Copy TAC</span>
+              </button>
+            </div>
+            <pre id="tac-code" class="tac-code-block"></pre>
+          </div>
+
+          <!-- Quadruples Table -->
+          <div id="quad-section" style="display:none;">
+            <div class="card-header" style="margin-top:1.25rem;margin-bottom:0.5rem;">
+              <div class="card-title" style="font-size:0.875rem;">
+                <div class="card-title-icon" style="font-size:0.75rem;">📊</div>
+                Quadruples Table
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="token-table quad-table">
+                <thead>
+                  <tr>
+                    <th class="col-num">#</th>
+                    <th>Operator</th>
+                    <th>Arg 1</th>
+                    <th>Arg 2</th>
+                    <th>Result</th>
+                  </tr>
+                </thead>
+                <tbody id="quad-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ICG Stats -->
+          <div id="icg-stats" class="stats-row" style="display:none;"></div>
+
+          <!-- Empty state -->
+          <div id="icg-empty" class="empty-state">
+            <div class="empty-icon">⚡</div>
+            <p>No intermediate code yet</p>
+            <small>Click "Analyze" to generate Three-Address Code from the AST</small>
           </div>
 
         </div>

@@ -1,4 +1,4 @@
-// C Parser Visualizer — Phase 3: sample buttons, analyze(), token table, AST tree, semantic analysis, symbol table, error highlighting, parser trace, pipeline animation
+// C Parser Visualizer — Phase 4: sample buttons, analyze(), token table, AST tree, semantic analysis, symbol table, ICG (TAC + Quadruples), error highlighting, parser trace, pipeline animation
 
 "use strict";
 
@@ -85,12 +85,22 @@ const semanticEmpty = document.getElementById('semantic-empty');
 const errLineIndicator = document.getElementById('error-line-indicator');
 const errLineText = document.getElementById('err-line-text');
 
+// ICG panel
+const tacSection = document.getElementById('tac-section');
+const tacCode = document.getElementById('tac-code');
+const quadSection = document.getElementById('quad-section');
+const quadTbody = document.getElementById('quad-tbody');
+const icgStats = document.getElementById('icg-stats');
+const icgEmpty = document.getElementById('icg-empty');
+const copyTacBtn = document.getElementById('copy-tac-btn');
+
 // Pipeline steps
 const pipSource = document.getElementById('pip-source');
 const pipLex = document.getElementById('pip-lex');
 const pipParse = document.getElementById('pip-parse');
 const pipAst = document.getElementById('pip-ast');
 const pipSemantic = document.getElementById('pip-semantic');
+const pipIcg = document.getElementById('pip-icg');
 
 // State
 let currentTokens = [];
@@ -194,13 +204,13 @@ function clearSemanticPanel() {
 
 // Pipeline animation
 function resetPipeline() {
-  [pipSource, pipLex, pipParse, pipAst, pipSemantic].forEach(el => {
-    el.classList.remove('pip-active', 'pip-done', 'pip-error');
+  [pipSource, pipLex, pipParse, pipAst, pipSemantic, pipIcg].forEach(el => {
+    if (el) el.classList.remove('pip-active', 'pip-done', 'pip-error');
   });
 }
 
 function setPipelineStage(stage, status = 'active') {
-  const map = { source: pipSource, lex: pipLex, parse: pipParse, ast: pipAst, semantic: pipSemantic };
+  const map = { source: pipSource, lex: pipLex, parse: pipParse, ast: pipAst, semantic: pipSemantic, icg: pipIcg };
   const el = map[stage];
   if (!el) return;
   el.classList.remove('pip-active', 'pip-done', 'pip-error');
@@ -355,6 +365,172 @@ function renderSemanticErrors(errors) {
     </div>`;
 
   semanticErrorBox.style.display = 'block';
+}
+
+// --- ICG Renderers ---
+
+function clearIcgPanel() {
+  tacSection.style.display = 'none';
+  tacCode.textContent = '';
+  quadSection.style.display = 'none';
+  quadTbody.innerHTML = '';
+  icgStats.style.display = 'none';
+  icgStats.innerHTML = '';
+  icgEmpty.style.display = 'flex';
+}
+
+// TAC op type classification for syntax highlighting
+const TAC_OP_CLASSES = {
+  label:    'tac-label',
+  goto:     'tac-jump',
+  ifFalse:  'tac-jump',
+  call:     'tac-call',
+  return:   'tac-return',
+  '=':      'tac-assign',
+};
+
+function renderTacCode(tacLines) {
+  if (!tacLines || !tacLines.length) {
+    tacSection.style.display = 'none';
+    return;
+  }
+
+  // Build syntax-highlighted TAC
+  const html = tacLines.map((line, i) => {
+    const num = `<span class="tac-line-num">${String(i + 1).padStart(3)}</span>`;
+    const highlighted = highlightTacLine(line);
+    return `${num}  ${highlighted}`;
+  }).join('\n');
+
+  tacCode.innerHTML = html;
+  tacSection.style.display = 'block';
+}
+
+function highlightTacLine(line) {
+  // Label lines
+  if (line.match(/^L\d+:$/)) {
+    return `<span class="tac-label">${escapeHtml(line)}</span>`;
+  }
+  // Jump instructions
+  if (line.startsWith('ifFalse')) {
+    const parts = line.match(/^(ifFalse)\s+(\S+)\s+(goto)\s+(\S+)$/);
+    if (parts) {
+      return `<span class="tac-jump">${parts[1]}</span> <span class="tac-var">${escapeHtml(parts[2])}</span> <span class="tac-jump">${parts[3]}</span> <span class="tac-label">${parts[4]}</span>`;
+    }
+  }
+  if (line.startsWith('goto ')) {
+    const parts = line.match(/^(goto)\s+(\S+)$/);
+    if (parts) {
+      return `<span class="tac-jump">${parts[1]}</span> <span class="tac-label">${parts[2]}</span>`;
+    }
+  }
+  // Return
+  if (line.startsWith('return')) {
+    return `<span class="tac-return">${escapeHtml(line)}</span>`;
+  }
+  // Function calls
+  if (line.startsWith('call ')) {
+    return `<span class="tac-call">${escapeHtml(line)}</span>`;
+  }
+  // Assignments: result = arg1 op arg2  or  result = arg1
+  const assignMatch = line.match(/^(\S+)\s*=\s*(.+)$/);
+  if (assignMatch) {
+    const lhs = assignMatch[1];
+    const rhs = assignMatch[2];
+    // Check if RHS is a binary operation
+    const binMatch = rhs.match(/^(\S+)\s+([+\-*/==!=<><=>=]+)\s+(\S+)$/);
+    if (binMatch) {
+      return `<span class="tac-var">${escapeHtml(lhs)}</span> <span class="tac-op">=</span> <span class="tac-var">${escapeHtml(binMatch[1])}</span> <span class="tac-op">${escapeHtml(binMatch[2])}</span> <span class="tac-var">${escapeHtml(binMatch[3])}</span>`;
+    }
+    // Unary minus
+    if (rhs.startsWith('uminus ')) {
+      const operand = rhs.replace('uminus ', '');
+      return `<span class="tac-var">${escapeHtml(lhs)}</span> <span class="tac-op">=</span> <span class="tac-op">uminus</span> <span class="tac-var">${escapeHtml(operand)}</span>`;
+    }
+    // Simple assignment
+    return `<span class="tac-var">${escapeHtml(lhs)}</span> <span class="tac-op">=</span> <span class="tac-var">${escapeHtml(rhs)}</span>`;
+  }
+
+  return escapeHtml(line);
+}
+
+// Quadruples op badge colors
+const QUAD_OP_COLORS = {
+  '+':       { bg: 'rgba(52,211,153,0.18)',  color: '#6ee7b7', border: 'rgba(52,211,153,0.4)' },
+  '-':       { bg: 'rgba(248,113,113,0.18)', color: '#fca5a5', border: 'rgba(248,113,113,0.4)' },
+  '*':       { bg: 'rgba(167,139,250,0.18)', color: '#c4b5fd', border: 'rgba(167,139,250,0.4)' },
+  '/':       { bg: 'rgba(251,146,60,0.18)',  color: '#fdba74', border: 'rgba(251,146,60,0.4)' },
+  '=':       { bg: 'rgba(96,165,250,0.18)',  color: '#93c5fd', border: 'rgba(96,165,250,0.4)' },
+  '==':      { bg: 'rgba(14,165,233,0.18)',  color: '#7dd3fc', border: 'rgba(14,165,233,0.4)' },
+  '!=':      { bg: 'rgba(244,63,94,0.18)',   color: '#fda4af', border: 'rgba(244,63,94,0.4)' },
+  '<':       { bg: 'rgba(6,182,212,0.18)',   color: '#67e8f9', border: 'rgba(6,182,212,0.4)' },
+  '>':       { bg: 'rgba(6,182,212,0.18)',   color: '#67e8f9', border: 'rgba(6,182,212,0.4)' },
+  '<=':      { bg: 'rgba(6,182,212,0.18)',   color: '#67e8f9', border: 'rgba(6,182,212,0.4)' },
+  '>=':      { bg: 'rgba(6,182,212,0.18)',   color: '#67e8f9', border: 'rgba(6,182,212,0.4)' },
+  'ifFalse': { bg: 'rgba(245,158,11,0.18)',  color: '#fcd34d', border: 'rgba(245,158,11,0.4)' },
+  'goto':    { bg: 'rgba(245,158,11,0.18)',  color: '#fcd34d', border: 'rgba(245,158,11,0.4)' },
+  'label':   { bg: 'rgba(139,92,246,0.18)',  color: '#c4b5fd', border: 'rgba(139,92,246,0.4)' },
+  'call':    { bg: 'rgba(236,72,153,0.18)',  color: '#f9a8d4', border: 'rgba(236,72,153,0.4)' },
+  'return':  { bg: 'rgba(132,204,22,0.18)',  color: '#bef264', border: 'rgba(132,204,22,0.4)' },
+  'uminus':  { bg: 'rgba(248,113,113,0.18)', color: '#fca5a5', border: 'rgba(248,113,113,0.4)' },
+};
+const QUAD_OP_DEFAULT = { bg: 'rgba(99,102,241,0.12)', color: '#a5b4fc', border: 'rgba(99,102,241,0.3)' };
+
+function renderQuadruples(quads) {
+  if (!quads || !quads.length) {
+    quadSection.style.display = 'none';
+    return;
+  }
+
+  quadTbody.innerHTML = quads.map((q, i) => {
+    const oc = QUAD_OP_COLORS[q.op] || QUAD_OP_DEFAULT;
+    return `
+    <tr>
+      <td class="col-num">${i + 1}</td>
+      <td><span class="scope-badge" style="background:${oc.bg};color:${oc.color};border-color:${oc.border}">${escapeHtml(q.op || '—')}</span></td>
+      <td class="quad-cell">${escapeHtml(q.arg1 || '—')}</td>
+      <td class="quad-cell">${escapeHtml(q.arg2 || '—')}</td>
+      <td class="quad-cell quad-result">${escapeHtml(q.result || '—')}</td>
+    </tr>`;
+  }).join('');
+
+  quadSection.style.display = 'block';
+}
+
+function renderIcgStats(tacLines, quads) {
+  if (!tacLines || !tacLines.length) {
+    icgStats.style.display = 'none';
+    return;
+  }
+
+  // Count instruction types
+  const counts = { assignments: 0, labels: 0, jumps: 0, calls: 0, returns: 0, operations: 0 };
+  (quads || []).forEach(q => {
+    if (q.op === 'label') counts.labels++;
+    else if (q.op === 'goto' || q.op === 'ifFalse') counts.jumps++;
+    else if (q.op === 'call') counts.calls++;
+    else if (q.op === 'return') counts.returns++;
+    else if (q.op === '=') counts.assignments++;
+    else counts.operations++;
+  });
+
+  const chips = [
+    { label: 'Instructions', value: tacLines.length, color: '#a5b4fc' },
+    { label: 'Operations',   value: counts.operations, color: '#6ee7b7' },
+    { label: 'Assignments',  value: counts.assignments, color: '#93c5fd' },
+    { label: 'Jumps',        value: counts.jumps,       color: '#fcd34d' },
+    { label: 'Labels',       value: counts.labels,      color: '#c4b5fd' },
+    { label: 'Calls',        value: counts.calls,       color: '#f9a8d4' },
+  ].filter(c => c.value > 0);
+
+  icgStats.innerHTML = chips.map(c => `
+    <div class="stat-chip" style="background:${c.color}15;border-color:${c.color}40;color:${c.color};">
+      <span class="dot" style="background:${c.color}"></span>
+      ${c.label}&nbsp;<strong>${c.value}</strong>
+    </div>
+  `).join('');
+
+  icgStats.style.display = 'flex';
 }
 
 // AST Visual Tree (D3.js) — Node colour palette per AST node type
@@ -611,6 +787,8 @@ async function analyze() {
     const trace = data.trace || [];
     const symbolTable = data.symbol_table || [];
     const semanticErrors = data.semantic_errors || [];
+    const tacLines = data.tac || [];
+    const quadruples = data.quadruples || [];
 
     currentTokens = tokens;
 
@@ -649,6 +827,8 @@ async function analyze() {
       highlightErrorLine(parseError.line);
       showError(`Syntax Error${parseError.line ? ` at line ${parseError.line}` : ''}: ${parseError.message}`);
       clearSemanticPanel();
+      clearIcgPanel();
+      setPipelineStage('icg', 'error');
     } else {
       setPipelineStage('parse', 'done');
       setPipelineStage('ast', 'done');
@@ -669,8 +849,27 @@ async function analyze() {
         setPipelineStage('semantic', 'done');
         semanticSuccess.style.display = 'flex';
         semanticSuccessMsg.textContent = `No semantic errors — ${symbolTable.length} symbol${symbolTable.length !== 1 ? 's' : ''} declared`;
+      }
+
+      // Render ICG results
+      setPipelineStage('icg', 'active');
+      renderTacCode(tacLines);
+      renderQuadruples(quadruples);
+      renderIcgStats(tacLines, quadruples);
+      icgEmpty.style.display = 'none';
+
+      if (tacLines.length > 0) {
+        setPipelineStage('icg', 'done');
+      }
+
+      // Overall success message
+      if (semanticErrors.length > 0) {
+        showError(
+          `✓ ${tokens.length} token${tokens.length !== 1 ? 's' : ''} · AST built · ${semanticErrors.length} semantic error${semanticErrors.length !== 1 ? 's' : ''} · ${tacLines.length} TAC instructions`
+        );
+      } else {
         showSuccess(
-          `✓ ${tokens.length} token${tokens.length !== 1 ? 's' : ''} · AST built · ${symbolTable.length} symbol${symbolTable.length !== 1 ? 's' : ''} · No semantic errors`
+          `✓ ${tokens.length} token${tokens.length !== 1 ? 's' : ''} · AST built · ${symbolTable.length} symbol${symbolTable.length !== 1 ? 's' : ''} · ${tacLines.length} TAC instructions`
         );
       }
     }
@@ -686,6 +885,7 @@ async function analyze() {
     clearTokenResults();
     clearAstPanel();
     clearSemanticPanel();
+    clearIcgPanel();
   } finally {
     setLoading(false);
   }
@@ -711,6 +911,7 @@ clearBtn.addEventListener('click', () => {
   clearTokenResults();
   clearAstPanel();
   clearSemanticPanel();
+  clearIcgPanel();
   hideBanners();
   clearErrorHighlight();
   resetPipeline();
@@ -762,6 +963,21 @@ copyBtn.addEventListener('click', () => {
     setTimeout(() => {
       copyBtn.classList.remove('copied');
       copyBtn.querySelector('.copy-text').textContent = 'Copy';
+    }, 2000);
+  });
+});
+
+// Copy TAC button
+copyTacBtn.addEventListener('click', () => {
+  const text = tacCode.textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const copyText = copyTacBtn.querySelector('.copy-text');
+    copyTacBtn.classList.add('copied');
+    copyText.textContent = 'Copied!';
+    setTimeout(() => {
+      copyTacBtn.classList.remove('copied');
+      copyText.textContent = 'Copy TAC';
     }, 2000);
   });
 });

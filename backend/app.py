@@ -1,4 +1,4 @@
-# Flask API for C Parser Visualizer — Phase 3: Lexical + Syntax + Semantic Analysis
+# Flask API for C Parser Visualizer — Phase 4: Lexical + Syntax + Semantic + ICG
 
 import os
 from dotenv import load_dotenv
@@ -7,6 +7,7 @@ from flask_cors import CORS
 from lexer.tokenizer import Tokenizer
 from parser.parser import CParser
 from semantic.semantic_analyzer import SemanticAnalyzer
+from icg.icg_generator import ICGGenerator
 
 load_dotenv()
 
@@ -23,9 +24,9 @@ tokenizer = Tokenizer()
 def home():
     return jsonify({
         'message': 'C Parser Visualizer API',
-        'phase':   'Phase 3 — Semantic Analysis',
+        'phase':   'Phase 4 — Intermediate Code Generation',
         'status':  'running',
-        'endpoints': ['/tokenize', '/parse', '/analyze']
+        'endpoints': ['/tokenize', '/parse', '/analyze', '/icg']
     })
 
 
@@ -105,6 +106,16 @@ def analyze():
             symbol_table = sem_result.get('symbol_table', [])
             semantic_errors = sem_result.get('semantic_errors', [])
 
+        # Phase 4: Intermediate Code Generation (only if AST was produced)
+        tac = []
+        quadruples = []
+
+        if ast:
+            icg = ICGGenerator()
+            icg_result = icg.generate(ast)
+            tac = icg_result.get('tac', [])
+            quadruples = icg_result.get('quadruples', [])
+
         return jsonify({
             'tokens':          token_dicts,
             'ast':             ast,
@@ -112,6 +123,8 @@ def analyze():
             'syntax_errors':   syntax_errors,
             'symbol_table':    symbol_table,
             'semantic_errors': semantic_errors,
+            'tac':             tac,
+            'quadruples':      quadruples,
             'trace':           trace,
         }), 200
 
@@ -119,12 +132,57 @@ def analyze():
         return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
 
 
+
+@app.route('/icg', methods=['POST'])
+def icg():
+    # Full pipeline: Lex + Parse + Semantic + ICG — returns TAC & Quadruples
+    try:
+        data = request.get_json()
+        if not data or 'code' not in data:
+            return jsonify({'error': 'Missing "code" field'}), 400
+
+        code = data['code']
+
+        # Phase 1: Lexical analysis
+        token_dicts = tokenizer.tokenize_to_dict(code)
+
+        # Phase 2: Syntax analysis
+        parser_result = CParser(token_dicts).parse()
+        ast       = parser_result.get('ast')
+        parse_err = parser_result.get('error')
+
+        if parse_err:
+            return jsonify({
+                'error': parse_err['message'],
+                'parseError': parse_err,
+                'tac': [],
+                'quadruples': [],
+            }), 200
+
+        # Phase 4: ICG
+        tac = []
+        quadruples = []
+        if ast:
+            icg_gen = ICGGenerator()
+            icg_result = icg_gen.generate(ast)
+            tac = icg_result.get('tac', [])
+            quadruples = icg_result.get('quadruples', [])
+
+        return jsonify({
+            'tac':        tac,
+            'quadruples': quadruples,
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': f'ICG failed: {str(e)}'}), 500
+
+
 if __name__ == '__main__':
     host  = os.getenv('HOST', 'localhost')
     port  = int(os.getenv('PORT', 5000))
     debug = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
 
-    print("🚀 Starting C Parser Visualizer API — Phase 3")
+    print("🚀 Starting C Parser Visualizer API — Phase 4")
     print(f"📍 Running on http://{host}:{port}")
-    print("📝 Endpoints: /tokenize  /parse  /analyze")
+    print("📝 Endpoints: /tokenize  /parse  /analyze  /icg")
     app.run(debug=debug, host=host, port=port)
